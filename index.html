@@ -181,7 +181,6 @@
       font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
 
-    /* 확대 시 왼쪽 스크롤 잘림 문제 해결 */
     .preview-container {
       border: 1px solid var(--border); background: var(--house-green); border-radius: 8px;
       min-height: 400px; overflow: auto; display: flex; justify-content: flex-start; align-items: flex-start;
@@ -201,7 +200,7 @@
       position: absolute; border: 1px solid var(--house-green); background: #ffffff !important;
       box-sizing: border-box; cursor: move; z-index: 5;
     }
-    /* 텍스트 상자 선택 및 이동성 강화 */
+
     .text-box-element {
       position: absolute; border: 2px dashed var(--primary); background: #ffffff;
       box-sizing: border-box; cursor: move; display: flex; align-items: center; justify-content: flex-start;
@@ -464,7 +463,7 @@
       </div>
       <div class="toolbar-group" id="linkUrlGroup" style="display:none;">
         <label>URL 주소:</label>
-        <input type="text" id="activeLinkTargetUrl" class="input-field" style="width:240px; placeholder="https://example.com" oninput="updateActiveLinkBox()">
+        <input type="text" id="activeLinkTargetUrl" class="input-field" style="width:240px; padding:6px;" placeholder="https://example.com" oninput="updateActiveLinkBox()">
       </div>
     </div>
   </div>
@@ -1388,7 +1387,7 @@
     };
     elem.appendChild(closeBtn);
 
-    // 드래그 및 마우스 클릭 이벤트 바인딩
+    // 드래그 및 마우스 클릭 이벤트 정확한 절대 위치 계산으로 변경
     elem.onmousedown = (e) => {
       if (e.target.classList.contains('mask-handle') || e.target.classList.contains('mask-close-btn')) return;
       e.stopPropagation();
@@ -1401,9 +1400,8 @@
       if (type === 'link') selectLinkBox(box.id);
 
       const overlayRect = overlay.getBoundingClientRect();
-      const rect = elem.getBoundingClientRect();
-      dragOffsetX = e.clientX - rect.left;
-      dragOffsetY = e.clientY - rect.top;
+      dragOffsetX = (e.clientX - overlayRect.left) - (box.x * renderZoomScale);
+      dragOffsetY = (e.clientY - overlayRect.top) - (box.y * renderZoomScale);
     };
 
     overlay.appendChild(elem);
@@ -1536,8 +1534,9 @@
       }
     };
 
-    overlay.onmousemove = (e) => {
+    window.onmousemove = (e) => {
       const overlayRect = overlay.getBoundingClientRect();
+
       if (isCreating && tempBoxElem) {
         const curX = e.clientX - overlayRect.left, curY = e.clientY - overlayRect.top;
         tempBoxElem.style.width = `${Math.abs(curX - createStartX)}px`;
@@ -1546,6 +1545,8 @@
         tempBoxElem.style.top = `${Math.min(createStartY, curY)}px`;
         return;
       }
+
+      if (!activeBoxId) return;
 
       const pageNum = activePages[currentActiveIndex];
       let targetMap = manualMasks;

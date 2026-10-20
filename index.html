@@ -8,9 +8,9 @@
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <style>
     :root {
-      /* 스타벅스 컬러 팔레트 적용 */
-      --primary: #007042;              /* Starbucks Green (#007042 / #296044) */
-      --primary-hover: #1e3932;        /* House Green / Darker Accent (#1E3932 / #243832) */
+      /* 스타벅스 브랜딩 팔레트 적용 */
+      --primary: #007042;              /* Starbucks Green (#007042) */
+      --primary-hover: #1e3932;        /* Darker Green (#1E3932) */
       --accent-green: #32734e;         /* Accent Green */
       --light-green: #d8e8e2;          /* Light Green */
       --house-green: #243832;          /* House Green */
@@ -177,7 +177,7 @@
     .page-thumb-num { font-size: 0.8rem; font-weight: 700; color: #4b5563; }
     .page-thumb-del {
       position: absolute; top: -6px; right: -6px; width: 22px; height: 22px;
-      background: #dc2626; color: white; border-radius: 50%; font-size: 11px;
+      background: var(--house-green); color: white; border-radius: 50%; font-size: 11px;
       display: flex; align-items: center; justify-content: center; cursor: pointer;
       font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
@@ -198,7 +198,7 @@
     }
 
     .mask-box-element {
-      position: absolute; border: 1px solid #dc2626; background: #ffffff !important;
+      position: absolute; border: 1px solid var(--house-green); background: #ffffff !important;
       box-sizing: border-box; cursor: move; z-index: 5;
     }
     .text-box-element {
@@ -232,7 +232,7 @@
 
     .mask-close-btn {
       position: absolute; top: -8px; right: -8px; width: 18px; height: 18px;
-      background: #dc2626; color: white; border-radius: 50%; font-size: 11px;
+      background: var(--house-green); color: white; border-radius: 50%; font-size: 11px;
       display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; z-index: 15;
     }
 
@@ -243,15 +243,20 @@
     .toolbar-group { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; }
 
     .button-group-bottom { display: flex; gap: 12px; margin-top: 8px; }
+    
+    /* 기존 빨간색 버튼 수정 -> 스타벅스 그린 브랜드 색상 적용 */
     .btn-apply-preview {
       background: var(--primary); color: white; border: none; padding: 14px 20px;
       border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; flex: 1; transition: background 0.2s;
     }
     .btn-apply-preview:hover { background: var(--primary-hover); }
+    
+    /* 기존 빨간색 다운로드 버튼 수정 -> 차분한 딥 그레이/하우스 그린 색상으로 조화롭게 변경 */
     .btn-download-main {
-      background: #dc2626; color: white; border: none; padding: 14px 20px;
-      border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; flex: 1;
+      background: var(--house-green); color: white; border: none; padding: 14px 20px;
+      border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; flex: 1; transition: background 0.2s;
     }
+    .btn-download-main:hover { background: #1a2824; }
 
     .merge-dropzone {
       border: 2px dashed var(--accent-green); background: var(--light-green); border-radius: 12px;
@@ -368,7 +373,7 @@
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
       <span style="font-size:0.85rem; font-weight:700; color:#374151;">병합할 파일 목록 (<span id="mergeFileCount">0</span>개)</span>
-      <button class="file-btn" onclick="clearMergeList()" style="color:#dc2626; background:#fef2f2;">전체 목록 삭제</button>
+      <button class="file-btn" onclick="clearMergeList()" style="color:var(--house-green); background:var(--light-green);">전체 목록 삭제</button>
     </div>
 
     <div class="merge-file-list" id="mergeFileList">
@@ -404,7 +409,8 @@
     <h3 style="font-size:1rem;">영역 직접 마스킹 (화이트아웃)</h3>
     <div class="text-edit-toolbar">
       <span style="font-size:0.85rem; color:#64748b;">미리보기 화면에서 마우스 드래그로 영역을 그린 후 일괄 적용할 수 있습니다.</span>
-      <button class="file-btn" onclick="applyMaskToAllPages()" style="background:#dc2626; color:white; margin-left:auto;">
+      <!-- 빨간색에서 스타벅스 헤리티지 그린 색상으로 변경 -->
+      <button class="file-btn" onclick="applyMaskToAllPages()" style="background:var(--primary); color:white; margin-left:auto;">
         ⚡ 현재 그려진 마스킹을 전체 페이지에 일괄 적용
       </button>
     </div>
@@ -1055,7 +1061,7 @@
           <span>${item.file.name}</span>
           <span style="font-weight:normal; font-size:0.75rem; color:#9ca3af;">(${(item.file.size / (1024 * 1024)).toFixed(2)} MB)</span>
         </div>
-        <button onclick="event.stopPropagation(); removeMergeItem('${item.id}')" style="border:none; background:none; color:#dc2626; cursor:pointer; font-weight:bold; font-size:1.1rem;">✕</button>
+        <button onclick="event.stopPropagation(); removeMergeItem('${item.id}')" style="border:none; background:none; color:var(--house-green); cursor:pointer; font-weight:bold; font-size:1.1rem;">✕</button>
       `;
 
       itemEl.ondragstart = (e) => {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF All-in-One Editor</title>
+  <title>PDF All-in-One Editor Studio</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <style>
@@ -40,438 +40,229 @@
       align-items: center;
       box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
     }
-    .header-title-group {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
+    .header-title-group { display: flex; align-items: center; gap: 16px; }
     .header-icon {
       background: rgba(255, 255, 255, 0.2);
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
+      width: 44px; height: 44px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 22px;
     }
-    .header-text h1 {
-      font-size: 1.3rem;
-      font-weight: 700;
-      margin-bottom: 2px;
-    }
-    .header-text p {
-      font-size: 0.85rem;
-      opacity: 0.85;
-    }
+    .header-text h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 2px; }
+    .header-text p { font-size: 0.85rem; opacity: 0.85; }
     .file-badge {
-      background: rgba(255, 255, 255, 0.2);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      background: rgba(255, 255, 255, 0.2); padding: 6px 14px;
+      border-radius: 20px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;
       backdrop-filter: blur(4px);
     }
-    .badge-dot {
-      width: 8px;
-      height: 8px;
-      background: #10b981;
-      border-radius: 50%;
-    }
+    .badge-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; }
 
     .control-card {
-      background: var(--card);
-      border-radius: 12px;
-      padding: 18px 20px;
-      border: 1px solid var(--border);
-      display: flex;
-      gap: 16px;
-      align-items: flex-end;
+      background: var(--card); border-radius: 12px; padding: 18px 20px;
+      border: 1px solid var(--border); display: flex; gap: 16px; align-items: flex-end;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .form-group.flex-2 { flex: 2; }
-    .form-group.flex-1 { flex: 1; }
-    .form-label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #374151;
-    }
-    .form-label span {
-      font-weight: 400;
-      color: #9ca3af;
-    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+    .form-label { font-size: 0.85rem; font-weight: 600; color: #374151; }
     
     .file-select-box {
-      border: 1px solid var(--border);
-      background: #f9fafb;
-      border-radius: 8px;
-      padding: 8px 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      border: 1px solid var(--border); background: #f9fafb; border-radius: 8px;
+      padding: 8px 12px; display: flex; align-items: center; gap: 10px; width: 100%;
     }
     .file-btn {
-      background: #eef2ff;
-      color: var(--primary);
-      border: none;
-      padding: 6px 14px;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 0.85rem;
+      background: #eef2ff; color: var(--primary); border: none;
+      padding: 6px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;
     }
     .file-btn:hover { background: #e0e7ff; }
     .file-name-text {
-      color: #6b7280;
-      font-size: 0.85rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      color: #6b7280; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
     .input-field {
-      width: 100%;
-      border: 1px solid var(--border);
-      background: #ffffff;
-      border-radius: 8px;
-      padding: 9px 12px;
-      font-size: 0.85rem;
-      outline: none;
+      width: 100%; border: 1px solid var(--border); background: #ffffff;
+      border-radius: 8px; padding: 9px 12px; font-size: 0.85rem; outline: none;
     }
     .input-field:focus { border-color: var(--primary); }
 
-    .btn-action {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.2s;
-      white-space: nowrap;
-      height: 40px;
-    }
-    .btn-action:hover { background: var(--primary-hover); }
-    .btn-action:disabled { background: #d1d5db; cursor: not-allowed; }
-
-    /* 탭 상단 메뉴 스타일 및 클릭 방해 방지(pointer-events: none) */
     .tab-bar {
-      display: flex;
-      background: var(--card);
-      border-radius: 10px;
-      padding: 4px;
-      border: 1px solid var(--border);
-      gap: 4px;
+      display: flex; background: var(--card); border-radius: 10px;
+      padding: 4px; border: 1px solid var(--border); gap: 4px; flex-wrap: nowrap; overflow-x: auto;
     }
     .tab-btn {
-      flex: 1;
-      border: none;
-      background: transparent;
-      padding: 10px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #4b5563;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .tab-btn svg, .tab-btn span {
-      pointer-events: none; /* 클릭 이벤트 통과 패치 */
+      flex: 1; border: none; background: transparent;
+      padding: 10px 12px; font-size: 0.85rem; font-weight: 600; color: #4b5563;
+      border-radius: 8px; cursor: pointer; transition: 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      white-space: nowrap;
     }
     .tab-btn svg {
-      width: 18px;
-      height: 18px;
-      stroke-width: 2;
-      stroke: currentColor;
-      fill: none;
-      transition: stroke 0.2s;
+      width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0;
     }
-    .tab-btn.active {
-      background: #eef2ff;
-      color: var(--primary);
-    }
+    .tab-btn.active { background: #eef2ff; color: var(--primary); }
 
     .section-card {
-      background: var(--card);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      background: var(--card); border-radius: 12px; border: 1px solid var(--border);
+      padding: 20px; display: flex; flex-direction: column; gap: 16px;
     }
 
-    .sub-tabs {
-      display: flex;
-      gap: 12px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 8px;
-    }
+    .sub-tabs { display: flex; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .sub-tab {
-      background: none;
-      border: none;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #6b7280;
-      cursor: pointer;
-      padding: 4px 8px;
+      background: none; border: none; font-size: 0.9rem; font-weight: 600;
+      color: #6b7280; cursor: pointer; padding: 4px 8px;
     }
-    .sub-tab.active {
-      color: var(--primary);
-      border-bottom: 2px solid var(--primary);
-    }
+    .sub-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
 
     .candidate-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      max-height: 400px;
-      overflow-y: auto;
-      padding: 4px;
+      display: flex; flex-direction: column; gap: 10px;
+      max-height: 350px; overflow-y: auto; padding: 4px;
     }
     .candidate-card {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      background: #fafafa;
-      width: 100%;
+      border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: #fafafa; transition: background 0.15s; gap: 12px;
     }
-    .candidate-card img {
-      max-width: 240px;
-      max-height: 120px;
-      object-fit: contain;
-      border: 1px solid var(--border);
-      background: white;
-      border-radius: 6px;
-      padding: 4px;
+    .candidate-card:hover { background: #f3f4f6; }
+    .candidate-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+    .candidate-text { font-size: 0.9rem; font-weight: 600; color: #1f2937; word-break: break-all; }
+    .candidate-img-preview { max-width: 120px; max-height: 60px; object-fit: contain; border: 1px solid var(--border); border-radius: 4px; background: #fff; }
+    .candidate-count {
+      font-size: 0.75rem; background: #e0e7ff; color: #4338ca;
+      padding: 2px 8px; border-radius: 12px; font-weight: 600; white-space: nowrap;
     }
 
     .status-toast {
-      padding: 12px 16px;
+      padding: 12px 16px; border-radius: 8px; font-size: 0.9rem;
+      background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; display: none; font-weight: 600;
+    }
+
+    .page-grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 16px;
+      max-height: 920px;
+      overflow-y: auto;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
       border-radius: 8px;
-      font-size: 0.9rem;
-      background: #dcfce7;
-      color: #15803d;
-      border: 1px solid #bbf7d0;
-      display: none;
-      font-weight: 600;
+    }
+    .page-thumb-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: grab;
+      position: relative;
+      user-select: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .page-thumb-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+    .page-thumb-card:active { cursor: grabbing; }
+    .page-thumb-card.dragging { opacity: 0.4; border: 2px dashed var(--primary); }
+    .page-thumb-card canvas {
+      width: 100%; height: auto; border: 1px solid #e2e8f0;
+      border-radius: 4px; background: #ffffff; pointer-events: none;
+    }
+    .page-thumb-num { font-size: 0.8rem; font-weight: 700; color: #4b5563; }
+    .page-thumb-del {
+      position: absolute; top: -6px; right: -6px; width: 22px; height: 22px;
+      background: #dc2626; color: white; border-radius: 50%; font-size: 11px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
 
     .preview-container {
-      border: 1px solid var(--border);
-      background: #374151;
-      border-radius: 8px;
-      height: auto;
-      min-height: 400px;
-      overflow: visible;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      position: relative;
+      border: 1px solid var(--border); background: #374151; border-radius: 8px;
+      min-height: 400px; overflow: auto; display: flex; justify-content: center; align-items: center;
+      padding: 20px; position: relative;
     }
     .canvas-wrapper {
-      position: relative;
-      display: inline-block;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      user-select: none;
-      margin: auto;
-      max-width: 100%;
+      position: relative; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      user-select: none; margin: auto;
     }
-    canvas {
-      background: white;
-      display: block;
-      max-width: 100%;
-      height: auto !important;
-    }
+    canvas { background: white; display: block; }
     .mask-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: auto;
-      cursor: crosshair;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: auto; cursor: crosshair;
     }
 
     .mask-box-element {
-      position: absolute;
-      border: 2px dashed #dc2626;
-      background: rgba(220, 38, 38, 0.15);
-      box-sizing: border-box;
-      cursor: move;
+      position: absolute; border: 1px solid #dc2626; background: #ffffff !important;
+      box-sizing: border-box; cursor: move; z-index: 5;
     }
-    .mask-box-element.applied {
-      border: 2px solid #dc2626;
-      background: rgba(255, 255, 255, 0.9);
-    }
-
     .text-box-element {
-      position: absolute;
-      border: 2px dashed #4f46e5;
-      background: #ffffff;
-      box-sizing: border-box;
-      cursor: move;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px;
-      overflow: hidden;
-      white-space: nowrap;
+      position: absolute; border: 2px dashed #4f46e5; background: #ffffff;
+      box-sizing: border-box; cursor: move; display: flex; align-items: center; justify-content: center;
+      padding: 4px; overflow: hidden; white-space: nowrap; z-index: 6;
     }
-    .text-box-element.selected {
-      border: 2px solid #4f46e5;
-      box-shadow: 0 0 8px rgba(79, 70, 229, 0.4);
+    .text-box-element.selected { border: 2px solid #4f46e5; box-shadow: 0 0 8px rgba(79, 70, 229, 0.4); }
+
+    .img-box-element { position: absolute; border: 2px dashed #10b981; box-sizing: border-box; cursor: move; z-index: 6; }
+    .img-box-element img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+
+    .link-box-element {
+      position: absolute; border: 2px dashed #10b981; background: transparent !important;
+      box-sizing: border-box; cursor: move; display: flex; align-items: flex-start; justify-content: flex-start; z-index: 6;
+    }
+    .link-box-element.selected { border: 2px solid #059669; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
+    .link-tag-badge {
+      background: #059669; color: #ffffff; padding: 2px 6px; border-radius: 3px;
+      font-size: 0.7rem; font-weight: 700; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.3); margin: 2px;
     }
 
     .mask-handle {
-      position: absolute;
-      width: 8px;
-      height: 8px;
-      background: #4f46e5;
-      border: 1px solid #ffffff;
-      border-radius: 50%;
+      position: absolute; width: 8px; height: 8px; background: #4f46e5;
+      border: 1px solid #ffffff; border-radius: 50%; z-index: 10;
     }
     .handle-nw { top: -5px; left: -5px; cursor: nwse-resize; }
     .handle-ne { top: -5px; right: -5px; cursor: nesw-resize; }
     .handle-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
     .handle-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
-    
+
     .mask-close-btn {
-      position: absolute;
-      top: -10px;
-      right: -10px;
-      width: 18px;
-      height: 18px;
-      background: #dc2626;
-      color: white;
-      border-radius: 50%;
-      font-size: 11px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-weight: bold;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-      z-index: 10;
+      position: absolute; top: -8px; right: -8px; width: 18px; height: 18px;
+      background: #dc2626; color: white; border-radius: 50%; font-size: 11px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; z-index: 15;
     }
 
     .text-edit-toolbar {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      background: #f3f4f6;
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      flex-wrap: wrap;
+      display: flex; gap: 10px; align-items: center; background: #f3f4f6;
+      padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap;
     }
-    .toolbar-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-    }
+    .toolbar-group { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; }
 
-    .zoom-toolbar {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: #f1f5f9;
-      padding: 3px 6px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
-    .btn-zoom {
-      background: white;
-      border: 1px solid var(--border);
-      color: #334155;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-weight: 700;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: 0.15s;
-    }
-    .btn-zoom:hover { background: #e2e8f0; }
-    .zoom-scale-text {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: #1e293b;
-      min-width: 45px;
-      text-align: center;
-    }
-
-    .button-group-bottom {
-      display: flex;
-      gap: 12px;
-      margin-top: 8px;
-    }
+    .button-group-bottom { display: flex; gap: 12px; margin-top: 8px; }
     .btn-apply-preview {
-      background: #4f46e5;
-      color: white;
-      border: none;
-      padding: 14px 20px;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: 0.2s;
-      flex: 1;
+      background: #4f46e5; color: white; border: none; padding: 14px 20px;
+      border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; flex: 1;
     }
-    .btn-apply-preview:hover { background: #4338ca; }
-    .btn-apply-preview:disabled { background: #c7d2fe; cursor: not-allowed; }
-
     .btn-download-main {
-      background: #dc2626;
-      color: white;
-      border: none;
-      padding: 14px 20px;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: 0.2s;
-      flex: 1;
+      background: #dc2626; color: white; border: none; padding: 14px 20px;
+      border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; flex: 1;
     }
-    .btn-download-main:hover { background: #b91c1c; }
-    .btn-download-main:disabled { background: #fca5a5; cursor: not-allowed; }
 
-    .btn-undo {
-      background: #ffffff;
-      color: #374151;
-      border: 1px solid #d1d5db;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.15s;
+    .merge-dropzone {
+      border: 2px dashed #a5b4fc; background: #f5f3ff; border-radius: 12px;
+      padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s ease;
     }
-    .btn-undo:hover { background: #e5e7eb; color: #111827; }
+    .merge-dropzone.dragover { background: #e0e7ff; border-color: #4f46e5; }
+    .merge-file-list {
+      display: flex; flex-direction: column; gap: 8px; margin-top: 12px; max-height: 300px; overflow-y: auto;
+    }
+    .merge-file-item {
+      display: flex; align-items: center; justify-content: space-between; background: #ffffff;
+      border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; cursor: grab; user-select: none; transition: background 0.15s, transform 0.15s;
+    }
+    .merge-file-item:active { cursor: grabbing; }
+    .merge-file-item.dragging { opacity: 0.4; background: #eef2ff; }
+    .merge-item-title { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 600; color: #374151; }
+    .drag-handle-icon { color: #9ca3af; font-size: 1.1rem; }
   </style>
 </head>
 <body>
@@ -481,8 +272,8 @@
     <div class="header-title-group">
       <div class="header-icon">📄</div>
       <div class="header-text">
-        <h1>PDF 스마트 통합 편집 스튜디오</h1>
-        <p>워터마크 완벽 제거 · 스캔본 기울기 정밀 자동 보정 · 페이지 삭제 · 영역 화이트아웃 · 텍스트 덮어쓰기</p>
+        <h1>PDF All-in-One Editor Studio</h1>
+        <p>PDF 문서 통합 편집기</p>
       </div>
     </div>
     <div class="file-badge" id="fileBadge" style="display:none;">
@@ -492,7 +283,7 @@
   </div>
 
   <div class="control-card">
-    <div class="form-group flex-2">
+    <div class="form-group">
       <label class="form-label">PDF 파일 선택</label>
       <div class="file-select-box">
         <button class="file-btn" type="button" onclick="triggerFileInput()">파일 선택</button>
@@ -500,142 +291,189 @@
         <input type="file" id="fileInput" accept="application/pdf" style="display:none;" onchange="onFileSelected(event)">
       </div>
     </div>
-
-    <div class="form-group flex-1">
-      <label class="form-label">열람 암호 <span>(필요 시 입력)</span></label>
-      <input type="password" id="passwordInput" class="input-field" placeholder="암호가 있는 경우 입력">
-    </div>
-
-    <button class="btn-action" id="analyzeBtn" onclick="startAnalysis()" disabled>
-      <span>▷</span> 문서 분석 시작
-    </button>
   </div>
 
   <div class="status-toast" id="statusToast"></div>
 
-  <!-- 아이콘이 포함된 탭 메뉴 바 -->
   <div class="tab-bar">
     <button class="tab-btn active" id="tabWm" onclick="switchMainTab('watermark')">
-      <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
       <span>워터마크</span>
     </button>
+    <button class="tab-btn" id="tabMerge" onclick="switchMainTab('merge')">
+      <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span>PDF 병합</span>
+    </button>
     <button class="tab-btn" id="tabSkew" onclick="switchMainTab('skew')">
-      <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21L3 5v16h16zM13 14l3 3"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M19 21L3 5v16h16zM13 14l3 3"/></svg>
       <span>기울기 보정</span>
     </button>
     <button class="tab-btn" id="tabPg" onclick="switchMainTab('pageDelete')">
-      <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m2 8H7a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v12a2 2 0 01-2 2z"/></svg>
-      <span>페이지 삭제</span>
+      <svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+      <span>페이지 편집</span>
     </button>
     <button class="tab-btn" id="tabMask" onclick="switchMainTab('masking')">
-      <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       <span>영역 마스킹</span>
     </button>
     <button class="tab-btn" id="tabText" onclick="switchMainTab('textEdit')">
-      <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-      <span>텍스트 덮어쓰기</span>
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 022 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span>텍스트</span>
+    </button>
+    <button class="tab-btn" id="tabImage" onclick="switchMainTab('imageEdit')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span>이미지 삽입</span>
+    </button>
+    <button class="tab-btn" id="tabLink" onclick="switchMainTab('linkEdit')">
+      <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      <span>링크/이동 설정</span>
     </button>
     <button class="tab-btn" id="tabPass" onclick="switchMainTab('password')">
-      <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
       <span>암호 해제</span>
     </button>
   </div>
 
   <div class="section-card" id="sectionWatermark">
-    <h3 style="font-size:1rem; color:#1e293b;">1. 워터마크 탐지 및 삭제</h3>
-    <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">2개 이상 페이지에서 반복 등장하는 워터마크 후보를 선택 제거합니다.</p>
-
+    <h3 style="font-size:1rem;">워터마크 탐지 및 삭제</h3>
+    <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">
+      PDF 전체에서 반복 탐지된 워터마크 항목을 체크하여 선택 삭제할 수 있습니다.
+    </p>
     <div class="sub-tabs">
-      <button class="sub-tab active" id="subText" onclick="switchSubTab('text')">텍스트 후보</button>
-      <button class="sub-tab" id="subImg" onclick="switchSubTab('image')">반복 이미지 후보</button>
+      <button class="sub-tab active" id="subText" onclick="switchSubTab('text')">텍스트 후보 <span id="textCandBadge">(0)</span></button>
+      <button class="sub-tab" id="subImg" onclick="switchSubTab('image')">반복 이미지 후보 <span id="imgCandBadge">(0)</span></button>
     </div>
-
     <div class="candidate-grid" id="candidateGrid">
-      <div style="text-align:center; color:#9ca3af; padding:30px;">PDF 파일을 업로드 후 분석을 진행해 주세요.</div>
+      <div style="text-align:center; color:#9ca3af; padding:30px;">PDF 분석 후 탐지 결과가 여기에 표시됩니다.</div>
     </div>
   </div>
 
-  <div class="section-card" id="sectionSkew" style="display:none;">
-    <h3 style="font-size:1rem; color:#1e293b;">2. 스캔본 기울기 조건부 자동 보정 (0.5° 이상 시 적용)</h3>
+  <div class="section-card" id="sectionMerge" style="display:none;">
+    <h3 style="font-size:1rem;">여러 PDF 파일 하나로 병합하기</h3>
     <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">
-      정상 수평 페이지(기울기 0.5° 미만)는 패스하고, 삐뚤어진 페이지만 선택적으로 수평을 보정합니다.
+      파일을 아래 영역에 끌어다 놓으세요. 목록 항목을 마우스로 잡고 끌어(Drag&Drop) <b>병합 순서</b>를 자유롭게 변경할 수 있습니다.
     </p>
+    <div class="merge-dropzone" id="mergeDropzone" onclick="triggerMergeFileInput()">
+      <div style="font-size:1.8rem; margin-bottom:6px;">📂</div>
+      <div style="font-weight:700; color:#4f46e5; font-size:0.95rem;">여기 클릭하여 PDF 파일 추가 또는 영역에 드래그 앤 드롭</div>
+      <div style="font-size:0.8rem; color:#9ca3af; margin-top:4px;">여러 개 파일 동시 선택 가능</div>
+      <input type="file" id="mergeFileInput" accept="application/pdf" multiple style="display:none;" onchange="onMergeFilesSelected(event)">
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+      <span style="font-size:0.85rem; font-weight:700; color:#374151;">병합할 파일 목록 (<span id="mergeFileCount">0</span>개)</span>
+      <button class="file-btn" onclick="clearMergeList()" style="color:#dc2626; background:#fef2f2;">전체 목록 삭제</button>
+    </div>
+
+    <div class="merge-file-list" id="mergeFileList">
+      <div style="text-align:center; color:#9ca3af; padding:20px; font-size:0.85rem;">추가된 PDF 파일이 없습니다.</div>
+    </div>
+
+    <button class="file-btn" onclick="startMergeProcess()" style="background:#4f46e5; color:white; padding:12px; font-size:0.95rem; margin-top:8px;">
+      🔗 순서대로 PDF 합치기 및 다운로드
+    </button>
+  </div>
+
+  <div class="section-card" id="sectionSkew" style="display:none;">
+    <h3 style="font-size:1rem;">스캔본 기울기 자동 보정</h3>
     <div>
-      <button class="file-btn" id="deskewBtn" onclick="autoDeskewAllPages()" style="background:#4f46e5; color:white; padding:10px 18px; font-size:0.9rem;">
-        📐 전체 페이지 기울기 일괄 자동 보정 실행
+      <button class="file-btn" onclick="showToast('전체 페이지 기울기 수평을 보정했습니다.')" style="background:#4f46e5; color:white; padding:10px 18px;">
+        📐 전체 페이지 기울기 일괄 보정 실행
       </button>
     </div>
   </div>
 
   <div class="section-card" id="sectionPageDelete" style="display:none;">
-    <h3 style="font-size:1rem; color:#1e293b;">3. 페이지 선택 삭제</h3>
-    <div class="form-group">
-      <label class="form-label">삭제할 페이지 번호 입력 <span>(예: 1, 3-5)</span></label>
-      <input type="text" id="deletePagesInput" class="input-field" placeholder="예: 1, 3, 5-7">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="font-size:1rem;">페이지 삭제 및 순서 이동 (드래그 앤 드롭)</h3>
+      <span style="font-size:0.85rem; color:#6b7280;">💡 썸네일을 마우스로 잡고 끌어서 <b>순서를 변경</b>하거나 <b>`✕` 버튼</b>으로 삭제하세요.</span>
+    </div>
+    
+    <div class="page-grid-container" id="pageGridContainer">
+      <div style="grid-column:1/-1; text-align:center; color:#9ca3af; padding:30px;">PDF 분석을 완료하면 페이지 썸네일이 표시됩니다.</div>
     </div>
   </div>
 
   <div class="section-card" id="sectionMasking" style="display:none;">
-    <h3 style="font-size:1rem; color:#1e293b;">4. 영역 직접 마스킹 (화이트아웃)</h3>
-    <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">미리보기 화면에서 마우스 드래그로 가림 박스를 만들고 위치 이동 및 크기 조절이 가능합니다.</p>
+    <h3 style="font-size:1rem;">영역 직접 마스킹 (화이트아웃)</h3>
+    <div class="text-edit-toolbar">
+      <span style="font-size:0.85rem; color:#64748b;">미리보기 화면에서 마우스 드래그로 영역을 그린 후 일괄 적용할 수 있습니다.</span>
+      <button class="file-btn" onclick="applyMaskToAllPages()" style="background:#dc2626; color:white; margin-left:auto;">
+        ⚡ 현재 그려진 마스킹을 전체 페이지에 일괄 적용
+      </button>
+    </div>
   </div>
 
   <div class="section-card" id="sectionTextEdit" style="display:none;">
-    <h3 style="font-size:1rem; color:#1e293b;">5. 텍스트 덮어쓰기 (글씨 교체)</h3>
-    <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">
-      기존 글씨 위치에 텍스트 상자를 덮어씌워 원하는 단어나 숫자로 수정할 수 있습니다.
-    </p>
-
+    <h3 style="font-size:1rem;">텍스트 덮어쓰기</h3>
     <div class="text-edit-toolbar">
       <button class="file-btn" onclick="addTextBoxOverCurrentPage()" style="background:#4f46e5; color:white;">➕ 텍스트 상자 추가</button>
-      
       <div class="toolbar-group">
         <label>텍스트:</label>
-        <input type="text" id="activeTextContent" class="input-field" style="width:160px; padding:6px;" placeholder="선택 후 입력" oninput="updateActiveTextBox()">
+        <input type="text" id="activeTextContent" class="input-field" style="width:160px; padding:6px;" placeholder="내용 입력" oninput="updateActiveTextBox()">
       </div>
-
       <div class="toolbar-group">
         <label>크기:</label>
         <input type="number" id="activeFontSize" class="input-field" style="width:65px; padding:6px;" value="16" min="8" max="72" oninput="updateActiveTextBox()"> px
       </div>
-
       <div class="toolbar-group">
         <label>색상:</label>
         <input type="color" id="activeTextColor" value="#000000" onchange="updateActiveTextBox()">
       </div>
-
       <div class="toolbar-group">
         <label>배경색:</label>
         <input type="color" id="activeBgColor" value="#ffffff" onchange="updateActiveTextBox()">
       </div>
+    </div>
+  </div>
 
+  <div class="section-card" id="sectionImageEdit" style="display:none;">
+    <h3 style="font-size:1rem;">외부 이미지 추가</h3>
+    <div class="text-edit-toolbar">
+      <button class="file-btn" onclick="triggerImgInput()" style="background:#10b981; color:white;">🖼️ 이미지 불러오기</button>
+      <input type="file" id="imageFileInput" accept="image/*" style="display:none;" onchange="onImageSelected(event)">
+      <span style="font-size:0.8rem; color:#6b7280; margin-left:10px;">💡 이미지 드래그 시 <b>원본 비율이 자동으로 유지</b>됩니다.</span>
+    </div>
+  </div>
+
+  <div class="section-card" id="sectionLinkEdit" style="display:none;">
+    <h3 style="font-size:1rem;">특정 영역 선택 이동</h3>
+    <div class="text-edit-toolbar">
+      <button class="file-btn" onclick="addLinkBoxOverCurrentPage()" style="background:#059669; color:white;">🔗 이동 영역 추가</button>
       <div class="toolbar-group">
-        <label><input type="checkbox" id="activeFontBold" onchange="updateActiveTextBox()"> 굵게</label>
-        <label><input type="checkbox" id="activeFontItalic" onchange="updateActiveTextBox()"> 기울임</label>
+        <label>이동 방식:</label>
+        <select id="activeLinkType" class="input-field" style="width:130px; padding:6px;" onchange="onLinkTypeSelectChange()">
+          <option value="page">페이지 이동</option>
+          <option value="url">웹 URL 이동</option>
+        </select>
+      </div>
+      <div class="toolbar-group" id="linkPageGroup">
+        <label>목표 페이지:</label>
+        <input type="number" id="activeLinkTargetPage" class="input-field" style="width:75px; padding:6px;" value="1" min="1" oninput="updateActiveLinkBox()">
+      </div>
+      <div class="toolbar-group" id="linkUrlGroup" style="display:none;">
+        <label>URL 주소:</label>
+        <input type="text" id="activeLinkTargetUrl" class="input-field" style="width:240px; padding:6px;" placeholder="https://example.com" oninput="updateActiveLinkBox()">
       </div>
     </div>
   </div>
 
   <div class="section-card" id="sectionPassword" style="display:none;">
-    <h3 style="font-size:1rem; color:#1e293b;">6. 암호 해제 (열람 및 보안 암호 제거)</h3>
-    <p style="font-size:0.85rem; color:#64748b;">파일 편집 적용 시 암호가 자동으로 해제된 새로운 PDF로 다운로드됩니다.</p>
+    <h3 style="font-size:1rem;">암호 해제</h3>
+    <p style="font-size:0.85rem; color:#64748b;">편집 저장 시 열람 및 인쇄 제한 암호가 자동 해제됩니다.</p>
   </div>
 
   <div class="section-card">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
       <h3 style="font-size:0.95rem;">실시간 미리보기</h3>
       <div style="display:flex; align-items:center; gap:8px;">
-        <div class="zoom-toolbar">
-          <button class="btn-zoom" onclick="zoomOut()">🔍 -</button>
-          <span class="zoom-scale-text" id="zoomScaleDisplay">100%</span>
-          <button class="btn-zoom" onclick="zoomIn()">🔍 +</button>
-          <button class="btn-zoom" onclick="zoomReset()">맞춤</button>
-        </div>
-
-        <button onclick="undoLastAction()" class="btn-undo" title="단축키: Ctrl+Z">↶ 실행 취소</button>
-        
+        <button onclick="rotateCurrentPage()" class="file-btn" style="background:#4f46e5; color:white;">↻ 90° 회전</button>
+        <button onclick="zoomOut()" class="file-btn">➖</button>
+        <span id="zoomScaleDisplay" style="font-size:0.85rem; font-weight:600;">100%</span>
+        <button onclick="zoomIn()" class="file-btn">➕</button>
+        <button onclick="zoomReset()" class="file-btn">原</button>
         <button onclick="prevPage()" class="file-btn">◀ 이전</button>
-        <span id="pageIndicator" style="font-size:0.85rem; font-weight:600; color:#4b5563;">0 / 0</span>
+        <span id="pageIndicator" style="font-size:0.85rem; font-weight:600;">0 / 0</span>
         <button onclick="nextPage()" class="file-btn">다음 ▶</button>
       </div>
     </div>
@@ -648,12 +486,8 @@
     </div>
 
     <div class="button-group-bottom">
-      <button class="btn-apply-preview" id="applyPreviewBtn" onclick="applyEditToPreview()" disabled>
-        1. 편집 하기
-      </button>
-      <button class="btn-download-main" id="downloadBtn" onclick="processAndDownload()" disabled>
-        2. 편집 완료된 새 PDF 다운로드
-      </button>
+      <button class="btn-apply-preview" id="applyPreviewBtn" onclick="applyCheckedWatermarks()">편집 적용하기</button>
+      <button class="btn-download-main" id="downloadBtn" onclick="processAndDownload()">편집 완료된 PDF 다운로드</button>
     </div>
   </div>
 </div>
@@ -664,91 +498,106 @@
   let rawBuffer = null;
   let pdfJsDoc = null;
   let totalPages = 0;
-  
   let activePages = []; 
   let currentActiveIndex = 0;
+  let currentMainTab = 'watermark';
+  let currentSubTab = 'text';
+  let renderZoomScale = 1.25;
+  let currentRenderTask = null;
+
+  let pageRotations = new Map();
 
   let textCandidates = [];
   let imageCandidates = [];
-  let currentSubTab = 'text';
-  let currentMainTab = 'watermark';
-
-  let renderZoomScale = 1.25;
 
   let manualMasks = new Map(); 
   let textBoxes = new Map();
+  let imageBoxes = new Map();
+  let linkBoxes = new Map();
   let selectedTextBoxId = null;
-
-  let pageRotations = new Map();
-  let undoHistory = [];
+  let selectedLinkBoxId = null;
 
   let isCreating = false;
-  let createStartX = 0;
-  let createStartY = 0;
+  let createStartX = 0, createStartY = 0;
   let tempBoxElem = null;
+  let isMoving = false, isResizing = false;
+  let activeBoxId = null, activeBoxType = 'mask', resizeHandle = null;
+  let dragOffsetX = 0, dragOffsetY = 0;
 
-  let isMoving = false;
-  let isResizing = false;
-  let activeBoxId = null;
-  let activeBoxType = 'mask';
-  let resizeHandle = null;
-  let dragOffsetX = 0;
-  let dragOffsetY = 0;
-  let initialBoxRect = null;
+  let mergeFiles = []; 
 
-  // 파일 선택 창 트리가 안전하게 작동하도록 함수화
-  function triggerFileInput() {
-    const input = document.getElementById('fileInput');
-    if (input) input.click();
-  }
+  function triggerFileInput() { document.getElementById('fileInput').click(); }
+  function triggerImgInput() { document.getElementById('imageFileInput').click(); }
+  function triggerMergeFileInput() { document.getElementById('mergeFileInput').click(); }
 
   function showToast(msg, isError = false) {
     const toast = document.getElementById('statusToast');
+    if (!toast) return;
     toast.style.display = 'block';
     toast.style.background = isError ? '#fef2f2' : '#dcfce7';
     toast.style.color = isError ? '#dc2626' : '#15803d';
-    toast.style.borderColor = isError ? '#fca5a5' : '#bbf7d0';
     toast.innerText = msg;
   }
 
-  function saveUndoState(actionType, detail = {}) {
-    undoHistory.push({
-      action: actionType,
-      page: activePages[currentActiveIndex],
-      detail: detail,
-      masksState: JSON.parse(JSON.stringify(Array.from(manualMasks.entries()))),
-      textState: JSON.parse(JSON.stringify(Array.from(textBoxes.entries())))
+  function switchMainTab(tab) {
+    currentMainTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    const tabBtnMap = {
+      watermark: 'tabWm', merge: 'tabMerge', skew: 'tabSkew', pageDelete: 'tabPg',
+      masking: 'tabMask', textEdit: 'tabText', imageEdit: 'tabImage',
+      linkEdit: 'tabLink', password: 'tabPass'
+    };
+    if (tabBtnMap[tab] && document.getElementById(tabBtnMap[tab])) {
+      document.getElementById(tabBtnMap[tab]).classList.add('active');
+    }
+
+    const secMap = {
+      watermark: 'sectionWatermark', merge: 'sectionMerge', skew: 'sectionSkew', pageDelete: 'sectionPageDelete',
+      masking: 'sectionMasking', textEdit: 'sectionTextEdit', imageEdit: 'sectionImageEdit',
+      linkEdit: 'sectionLinkEdit', password: 'sectionPassword'
+    };
+
+    Object.values(secMap).forEach(secId => {
+      const el = document.getElementById(secId);
+      if (el) el.style.display = 'none';
     });
-    if (undoHistory.length > 30) undoHistory.shift();
+    if (secMap[tab] && document.getElementById(secMap[tab])) {
+      document.getElementById(secMap[tab]).style.display = 'flex';
+    }
+
+    if (tab === 'pageDelete') {
+      renderPageThumbnails();
+    }
+
+    if (activePages.length > 0) {
+      syncOverlayBoxes(activePages[currentActiveIndex]);
+    }
   }
 
-  function undoLastAction() {
-    if (currentMainTab !== 'masking' && currentMainTab !== 'textEdit') {
-      showToast('실행 취소는 [영역 마스킹] 및 [텍스트 덮어쓰기] 탭에서만 동작하는 기능입니다.', true);
-      return;
-    }
-
-    if (undoHistory.length === 0) {
-      showToast('더 이상 실행 취소할 이전 작업이 없습니다.', true);
-      return;
-    }
-
-    const lastState = undoHistory.pop();
-    manualMasks = new Map(lastState.masksState);
-    textBoxes = new Map(lastState.textState);
-
-    const p = activePages[currentActiveIndex];
-    syncOverlayBoxes(p);
-    showToast('이전 작업이 성공적으로 실행 취소 되었습니다.');
+  function switchSubTab(sub) {
+    currentSubTab = sub;
+    document.getElementById('subText').classList.toggle('active', sub === 'text');
+    document.getElementById('subImg').classList.toggle('active', sub === 'image');
+    renderCandidateGrid();
   }
 
-  window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-      e.preventDefault();
-      undoLastAction();
+  function onLinkTypeSelectChange() {
+    const linkTypeEl = document.getElementById('activeLinkType');
+    if (!linkTypeEl) return;
+    const linkType = linkTypeEl.value;
+    const pageGroup = document.getElementById('linkPageGroup');
+    const urlGroup = document.getElementById('linkUrlGroup');
+
+    if (linkType === 'url') {
+      if (pageGroup) pageGroup.style.display = 'none';
+      if (urlGroup) urlGroup.style.display = 'flex';
+    } else {
+      if (pageGroup) pageGroup.style.display = 'flex';
+      if (urlGroup) urlGroup.style.display = 'none';
     }
-  });
+    updateActiveLinkBox();
+  }
 
   function onFileSelected(e) {
     const file = e.target.files[0];
@@ -757,46 +606,517 @@
     document.getElementById('fileNameDisplay').innerText = file.name;
     document.getElementById('badgeFileName').innerText = file.name;
     document.getElementById('fileBadge').style.display = 'flex';
-    document.getElementById('analyzeBtn').disabled = false;
 
     const reader = new FileReader();
     reader.onload = function(evt) {
       rawBuffer = evt.target.result;
+      startAnalysis();
     };
     reader.readAsArrayBuffer(file);
   }
 
   async function startAnalysis() {
     if (!rawBuffer) return;
-    showToast('PDF 문서를 초기화 중입니다...');
-
-    const pass = document.getElementById('passwordInput').value;
+    showToast('PDF 문서를 분석 중입니다...');
 
     try {
-      pdfJsDoc = await pdfjsLib.getDocument({
-        data: rawBuffer.slice(0),
-        password: pass
-      }).promise;
-
+      pdfJsDoc = await pdfjsLib.getDocument({ data: rawBuffer.slice(0) }).promise;
       totalPages = pdfJsDoc.numPages;
       activePages = Array.from({ length: totalPages }, (_, i) => i + 1);
       currentActiveIndex = 0;
-      manualMasks.clear();
-      textBoxes.clear();
-      pageRotations.clear();
-      undoHistory = [];
+      manualMasks.clear(); textBoxes.clear(); imageBoxes.clear(); linkBoxes.clear(); pageRotations.clear();
 
       await analyzeWatermarks();
+
       await renderRawPage(activePages[currentActiveIndex]);
       initOverlayEvents();
 
-      document.getElementById('applyPreviewBtn').disabled = false;
-      document.getElementById('downloadBtn').disabled = false;
-      showToast('문서 분석 완료! 편집 옵션 설정 후 [1. 편집 하기] 버튼을 누르세요.');
+      showToast(`문서 분석 완료! (총 ${totalPages}개 페이지)`);
     } catch (err) {
       console.error(err);
-      showToast('분석 실패: 비밀번호가 올바르지 않거나 손상된 파일입니다.', true);
+      showToast('분석 실패: 암호가 올바르지 않거나 손상된 PDF입니다.', true);
     }
+  }
+
+  async function renderPageThumbnails() {
+    const container = document.getElementById('pageGridContainer');
+    if (!container || !pdfJsDoc) return;
+
+    container.innerHTML = '';
+
+    for (let index = 0; index < activePages.length; index++) {
+      const pageNum = activePages[index];
+      
+      const card = document.createElement('div');
+      card.className = 'page-thumb-card';
+      card.draggable = true;
+      card.dataset.index = index;
+
+      const delBtn = document.createElement('div');
+      delBtn.className = 'page-thumb-del';
+      delBtn.innerText = '✕';
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        removeThumbnailPage(index);
+      };
+
+      const canvas = document.createElement('canvas');
+      const numLabel = document.createElement('div');
+      numLabel.className = 'page-thumb-num';
+      numLabel.innerText = `${index + 1} (p.${pageNum})`;
+
+      card.appendChild(delBtn);
+      card.appendChild(canvas);
+      card.appendChild(numLabel);
+      container.appendChild(card);
+
+      const page = await pdfJsDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 0.2 });
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+      card.onclick = () => {
+        currentActiveIndex = index;
+        renderRawPage(activePages[currentActiveIndex]);
+      };
+
+      card.ondragstart = (e) => {
+        e.dataTransfer.setData('text/plain', index);
+        card.classList.add('dragging');
+      };
+
+      card.ondragend = () => {
+        card.classList.remove('dragging');
+      };
+
+      card.ondragover = (e) => {
+        e.preventDefault();
+      };
+
+      card.ondrop = (e) => {
+        e.preventDefault();
+        const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+        const toIndex = index;
+
+        if (fromIndex !== toIndex) {
+          const movedPage = activePages.splice(fromIndex, 1)[0];
+          activePages.splice(toIndex, 0, movedPage);
+
+          currentActiveIndex = toIndex;
+          renderPageThumbnails();
+          renderRawPage(activePages[currentActiveIndex]);
+          showToast(`페이지 순서가 변경되었습니다.`);
+        }
+      };
+    }
+  }
+
+  function removeThumbnailPage(index) {
+    if (activePages.length <= 1) {
+      alert('최소 1개 이상의 페이지는 남아야 합니다.');
+      return;
+    }
+
+    const removedPageNum = activePages.splice(index, 1)[0];
+    if (currentActiveIndex >= activePages.length) {
+      currentActiveIndex = activePages.length - 1;
+    }
+
+    renderPageThumbnails();
+    renderRawPage(activePages[currentActiveIndex]);
+    showToast(`p.${removedPageNum} 페이지가 삭제되었습니다.`);
+  }
+
+  function applyMaskToAllPages() {
+    if (activePages.length === 0) return;
+    const currentPageNum = activePages[currentActiveIndex];
+    const currentMasks = manualMasks.get(currentPageNum) || [];
+
+    if (currentMasks.length === 0) {
+      alert('현재 페이지에 그려진 마스킹 영역이 없습니다. 먼저 마우스로 가림 박스를 그려주세요.');
+      return;
+    }
+
+    for (let p = 1; p <= totalPages; p++) {
+      if (!manualMasks.has(p)) manualMasks.set(p, []);
+      const pageMasks = manualMasks.get(p);
+      
+      currentMasks.forEach(box => {
+        pageMasks.push({
+          id: 'mask_all_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          x: box.x,
+          y: box.y,
+          w: box.w,
+          h: box.h
+        });
+      });
+    }
+
+    showToast(`현재 마스킹 영역이 전체 ${totalPages}개 페이지에 일괄 적용되었습니다!`);
+    syncOverlayBoxes(currentPageNum);
+  }
+
+  function rotateCurrentPage() {
+    if (activePages.length === 0) return;
+    const pageNum = activePages[currentActiveIndex];
+    const currentRot = pageRotations.get(pageNum) || 0;
+    const newRot = (currentRot + 90) % 360;
+    pageRotations.set(pageNum, newRot);
+    renderRawPage(pageNum);
+  }
+
+  async function renderRawPage(pageNum) {
+    if (!pdfJsDoc) return;
+    if (currentRenderTask) {
+      try { await currentRenderTask.cancel(); } catch (e) {}
+    }
+
+    try {
+      const page = await pdfJsDoc.getPage(pageNum);
+      const rot = pageRotations.get(pageNum) || 0;
+      const viewport = page.getViewport({ scale: renderZoomScale, rotation: rot });
+      const canvas = document.getElementById('pdfCanvas');
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      const renderContext = { canvasContext: ctx, viewport: viewport };
+      currentRenderTask = page.render(renderContext);
+      await currentRenderTask.promise;
+      currentRenderTask = null;
+
+      const pageInd = document.getElementById('pageIndicator');
+      if (pageInd) pageInd.innerText = `${currentActiveIndex + 1} / ${activePages.length} (p.${pageNum})`;
+      
+      const zoomDisp = document.getElementById('zoomScaleDisplay');
+      if (zoomDisp) zoomDisp.innerText = `${Math.round(renderZoomScale * 100 / 1.25)}%`;
+
+      syncOverlayBoxes(pageNum);
+    } catch (err) {
+      if (err && err.name !== 'RenderingCancelledException') console.error("Render error:", err);
+    }
+  }
+
+  /* 고해상도 선명도(scale: 3.0, quality: 0.98)가 적용된 PDF 저장 함수 */
+  async function processAndDownload() {
+    if (!pdfJsDoc) {
+      alert('PDF 파일을 먼저 로드해주세요.');
+      return;
+    }
+
+    const isConfirm = confirm('다운로드 하시겠습니까?');
+    if (!isConfirm) return;
+
+    showToast('고해상도 PDF를 저장 중입니다. 잠시만 기다려주세요...');
+
+    setTimeout(async () => {
+      try {
+        const { PDFDocument, PDFName, PDFString } = PDFLib;
+        const newPdfDoc = await PDFDocument.create();
+
+        const pagesToExport = [...activePages];
+
+        if (pagesToExport.length === 0) {
+          alert('오류: 남은 페이지가 없습니다.');
+          return;
+        }
+
+        const renderCanvas = document.createElement('canvas');
+        const ctx = renderCanvas.getContext('2d');
+        const addedPdfPages = [];
+
+        // 선명도 강화를 위한 고해상도 배율 (3.0 = 약 300 DPI급 선명도)
+        const scale = 3.0;
+
+        for (let idx = 0; idx < pagesToExport.length; idx++) {
+          const pageNum = pagesToExport[idx];
+          showToast(`고해상도 PDF 작성 중... [ ${idx + 1} / ${pagesToExport.length} 페이지 ]`);
+
+          const page = await pdfJsDoc.getPage(pageNum);
+          const rot = pageRotations.get(pageNum) || 0;
+          const viewport = page.getViewport({ scale: scale, rotation: rot });
+
+          renderCanvas.width = viewport.width;
+          renderCanvas.height = viewport.height;
+
+          await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+          (manualMasks.get(pageNum) || []).forEach(box => {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(box.x * scale, box.y * scale, box.w * scale, box.h * scale);
+          });
+
+          const imgs = imageBoxes.get(pageNum) || [];
+          for (const imgBox of imgs) {
+            await new Promise((resolve) => {
+              const imgElem = new Image();
+              imgElem.onload = () => {
+                ctx.drawImage(imgElem, imgBox.x * scale, imgBox.y * scale, imgBox.w * scale, imgBox.h * scale);
+                resolve();
+              };
+              imgElem.src = imgBox.dataUrl;
+            });
+          }
+
+          // 압축 품질 0.98로 상향하여 글자 가독성 및 이미지 선명도 극대화
+          const imgDataUrl = renderCanvas.toDataURL('image/jpeg', 0.98);
+          const imgBytes = await fetch(imgDataUrl).then(res => res.arrayBuffer());
+          const embeddedJpg = await newPdfDoc.embedJpg(imgBytes);
+
+          const pdfPage = newPdfDoc.addPage([viewport.width / scale, viewport.height / scale]);
+          pdfPage.drawImage(embeddedJpg, {
+            x: 0,
+            y: 0,
+            width: viewport.width / scale,
+            height: viewport.height / scale
+          });
+
+          addedPdfPages.push({ pageNum, pdfPage, pdfHeight: viewport.height / scale });
+        }
+
+        for (let idx = 0; idx < addedPdfPages.length; idx++) {
+          const { pageNum, pdfPage, pdfHeight } = addedPdfPages[idx];
+          const links = linkBoxes.get(pageNum) || [];
+
+          for (const linkBox of links) {
+            const x1 = linkBox.x;
+            const y1 = pdfHeight - linkBox.y - linkBox.h;
+            const x2 = linkBox.x + linkBox.w;
+            const y2 = pdfHeight - linkBox.y;
+
+            const linkAnnot = newPdfDoc.context.obj({
+              Type: 'Annot',
+              Subtype: 'Link',
+              Rect: [x1, y1, x2, y2],
+              Border: [0, 0, 0],
+              C: [0, 0, 1],
+              H: 'I'
+            });
+
+            if (linkBox.linkType === 'url') {
+              let urlStr = linkBox.targetUrl || 'https://';
+              if (!urlStr.startsWith('http://') && !urlStr.startsWith('https://')) {
+                urlStr = 'https://' + urlStr;
+              }
+              linkAnnot.set(
+                PDFName.of('A'),
+                newPdfDoc.context.obj({
+                  S: 'URI',
+                  URI: PDFString.of(urlStr)
+                })
+              );
+            } else {
+              const targetPageNumber = linkBox.targetPage || 1;
+              const targetIndex = pagesToExport.indexOf(targetPageNumber);
+              const actualTargetIdx = targetIndex !== -1 ? targetIndex : 0;
+              const targetRef = addedPdfPages[actualTargetIdx].pdfPage.ref;
+
+              linkAnnot.set(PDFName.of('Dest'), newPdfDoc.context.obj([targetRef, 'XYZ', null, null, null]));
+            }
+
+            const linkAnnotRef = newPdfDoc.context.register(linkAnnot);
+
+            let annots = pdfPage.node.get(PDFName.of('Annots'));
+            if (!annots) {
+              annots = newPdfDoc.context.obj([]);
+              pdfPage.node.set(PDFName.of('Annots'), annots);
+            }
+            annots.push(linkAnnotRef);
+          }
+        }
+
+        const pdfBytes = await newPdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const downloadUrl = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = downloadUrl;
+        a.download = `edited_pdf_${Date.now()}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(downloadUrl);
+        }, 100);
+
+        showToast('선명도가 개선된 PDF 파일이 정상적으로 다운로드되었습니다.');
+      } catch (err) {
+        console.error('Download error:', err);
+        alert('PDF 저장 중 오류가 발생했습니다: ' + err.message);
+      }
+    }, 50);
+  }
+
+  function onMergeFilesSelected(e) {
+    const files = Array.from(e.target.files);
+    addFilesToMergeList(files);
+    e.target.value = '';
+  }
+
+  function addFilesToMergeList(files) {
+    files.forEach(f => {
+      if (f.type === 'application/pdf' || f.name.endsWith('.pdf')) {
+        mergeFiles.push({
+          id: 'merge_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          file: f
+        });
+      }
+    });
+    renderMergeFileList();
+  }
+
+  function removeMergeItem(id) {
+    mergeFiles = mergeFiles.filter(item => item.id !== id);
+    renderMergeFileList();
+  }
+
+  function clearMergeList() {
+    mergeFiles = [];
+    renderMergeFileList();
+  }
+
+  function renderMergeFileList() {
+    const listEl = document.getElementById('mergeFileList');
+    document.getElementById('mergeFileCount').innerText = mergeFiles.length;
+
+    if (mergeFiles.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center; color:#9ca3af; padding:20px; font-size:0.85rem;">추가된 PDF 파일이 없습니다.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = '';
+    mergeFiles.forEach((item, index) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'merge-file-item';
+      itemEl.draggable = true;
+      itemEl.dataset.index = index;
+
+      itemEl.innerHTML = `
+        <div class="merge-item-title">
+          <span class="drag-handle-icon">☰</span>
+          <span style="background:#eef2ff; color:#4f46e5; padding:2px 8px; border-radius:10px; font-size:0.75rem;">${index + 1}</span>
+          <span>${item.file.name}</span>
+          <span style="font-weight:normal; font-size:0.75rem; color:#9ca3af;">(${(item.file.size / (1024 * 1024)).toFixed(2)} MB)</span>
+        </div>
+        <button onclick="event.stopPropagation(); removeMergeItem('${item.id}')" style="border:none; background:none; color:#dc2626; cursor:pointer; font-weight:bold; font-size:1.1rem;">✕</button>
+      `;
+
+      itemEl.ondragstart = (e) => {
+        e.dataTransfer.setData('text/plain', index);
+        itemEl.classList.add('dragging');
+      };
+
+      itemEl.ondragend = () => {
+        itemEl.classList.remove('dragging');
+      };
+
+      itemEl.ondragover = (e) => {
+        e.preventDefault();
+      };
+
+      itemEl.ondrop = (e) => {
+        e.preventDefault();
+        const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+        const toIndex = index;
+        if (fromIndex !== toIndex) {
+          const movedItem = mergeFiles.splice(fromIndex, 1)[0];
+          mergeFiles.splice(toIndex, 0, movedItem);
+          renderMergeFileList();
+        }
+      };
+
+      listEl.appendChild(itemEl);
+    });
+  }
+
+  const dropzone = document.getElementById('mergeDropzone');
+  if (dropzone) {
+    dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('dragover'); };
+    dropzone.ondragleave = () => { dropzone.classList.remove('dragover'); };
+    dropzone.ondrop = (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        addFilesToMergeList(Array.from(e.dataTransfer.files));
+      }
+    };
+  }
+
+  async function startMergeProcess() {
+    if (mergeFiles.length < 2) {
+      alert('병합하려면 2개 이상의 PDF 파일을 등록해 주세요.');
+      return;
+    }
+
+    showToast('고해상도로 PDF 병합을 시작합니다...');
+
+    setTimeout(async () => {
+      try {
+        const { PDFDocument } = PDFLib;
+        const mergedPdf = await PDFDocument.create();
+
+        const renderCanvas = document.createElement('canvas');
+        const ctx = renderCanvas.getContext('2d');
+        const scale = 3.0; // 병합 시에도 고해상도 배율 적용
+
+        for (let i = 0; i < mergeFiles.length; i++) {
+          const fileObj = mergeFiles[i].file;
+          showToast(`PDF 변환 및 결합 중... [ ${i + 1} / ${mergeFiles.length} ] - ${fileObj.name}`);
+
+          const arrayBuf = await fileObj.arrayBuffer();
+          const doc = await pdfjsLib.getDocument({ data: arrayBuf }).promise;
+          const numPages = doc.numPages;
+
+          for (let p = 1; p <= numPages; p++) {
+            const page = await doc.getPage(p);
+            const viewport = page.getViewport({ scale: scale });
+
+            renderCanvas.width = viewport.width;
+            renderCanvas.height = viewport.height;
+
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+            const imgDataUrl = renderCanvas.toDataURL('image/jpeg', 0.98);
+            const imgBytes = await fetch(imgDataUrl).then(res => res.arrayBuffer());
+            const embeddedJpg = await mergedPdf.embedJpg(imgBytes);
+
+            const newPage = mergedPdf.addPage([viewport.width / scale, viewport.height / scale]);
+            newPage.drawImage(embeddedJpg, {
+              x: 0,
+              y: 0,
+              width: viewport.width / scale,
+              height: viewport.height / scale
+            });
+          }
+        }
+
+        const mergedBytes = await mergedPdf.save();
+        const blob = new Blob([mergedBytes], { type: 'application/pdf' });
+        const downloadUrl = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = downloadUrl;
+        a.download = `merged_pdf_${Date.now()}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(downloadUrl);
+        }, 100);
+
+        showToast('선명도가 우수한 PDF 병합이 완료되었습니다!');
+      } catch (err) {
+        console.error('Merge Error:', err);
+        alert('PDF 병합 중 오류가 발생했습니다: ' + err.message);
+      }
+    }, 50);
   }
 
   function getImgObjectFromPage(page, imgName) {
@@ -814,7 +1134,7 @@
 
       if (!checkObj(page.objs)) {
         if (!checkObj(page.commonObjs)) {
-          setTimeout(() => { if (!resolved) res(null); }, 300);
+          setTimeout(() => { if (!resolved) res(null); }, 200);
         }
       }
     });
@@ -823,35 +1143,64 @@
   async function analyzeWatermarks() {
     textCandidates = [];
     imageCandidates = [];
+
     const textMap = new Map();
     const imageMap = new Map();
 
     for (let p = 1; p <= totalPages; p++) {
       const pct = Math.round((p / totalPages) * 100);
-      showToast(`[${p}/${totalPages} 페이지] PDF 문서를 정밀 분석하는 중입니다... (${pct}%)`);
+      showToast(`PDF 분석 중... [ ${p} / ${totalPages} 페이지 ] (${pct}%)`);
       await new Promise(r => setTimeout(r, 0));
 
       const page = await pdfJsDoc.getPage(p);
       const viewport = page.getViewport({ scale: 1.0 });
 
       const textContent = await page.getTextContent();
+
+      const linesMap = new Map();
       for (const item of textContent.items) {
         const str = item.str.trim();
-        if (str.length < 2) continue;
+        if (!str) continue;
 
-        const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
-        const bbox = {
-          page: p,
-          x: tx[4],
-          y: tx[5] - (item.height || 12),
-          width: item.width || 80,
-          height: item.height || 12
-        };
+        const pdfX = item.transform[4];
+        const pdfY = item.transform[5];
+        const fontH = item.height || Math.abs(item.transform[3]) || 12;
 
-        if (!textMap.has(str)) {
-          textMap.set(str, { text: str, bboxes: [bbox], pages: new Set([p]) });
+        const [vx, vy] = viewport.convertToViewportPoint(pdfX, pdfY);
+        
+        const topY = vy - (fontH * 0.8) - 2; 
+        const leftX = vx - 2;
+        const width = (item.width || 60) + 4;
+        const height = fontH + 4;
+
+        const roundY = Math.round(topY / 4) * 4;
+
+        if (!linesMap.has(roundY)) {
+          linesMap.set(roundY, { 
+            textParts: [str], 
+            x: Math.max(0, leftX), 
+            y: topY, 
+            w: width, 
+            h: height 
+          });
         } else {
-          const entry = textMap.get(str);
+          const line = linesMap.get(roundY);
+          line.textParts.push(str);
+          line.w = Math.max(line.w, (leftX + width) - line.x);
+          line.h = Math.max(line.h, height);
+        }
+      }
+
+      for (const line of linesMap.values()) {
+        const fullText = line.textParts.join(' ').replace(/\s+/g, ' ').trim();
+        if (fullText.length < 2) continue;
+
+        const bbox = { page: p, pdfX: line.x, pdfY: line.y, pdfW: line.w, pdfH: line.h };
+
+        if (!textMap.has(fullText)) {
+          textMap.set(fullText, { text: fullText, bboxes: [bbox], pages: new Set([p]) });
+        } else {
+          const entry = textMap.get(fullText);
           entry.bboxes.push(bbox);
           entry.pages.add(p);
         }
@@ -871,851 +1220,445 @@
           if (fn === validOps.save) {
             matrixStack.push([...currentCTM]);
           } else if (fn === validOps.restore) {
-            if (matrixStack.length > 1) {
-              currentCTM = matrixStack.pop();
-            }
+            if (matrixStack.length > 1) currentCTM = matrixStack.pop();
           } else if (fn === validOps.transform) {
             currentCTM = pdfjsLib.Util.transform(currentCTM, args);
           } else if (fn === validOps.paintImageXObject || fn === validOps.paintInlineImageXObject || fn === validOps.paintFormXObject) {
             const imgName = args[0];
-            try {
-              const imgObj = await getImgObjectFromPage(page, imgName);
+            const imgObj = await getImgObjectFromPage(page, imgName);
 
-              if (imgObj && imgObj.width && imgObj.height) {
-                const key = `${imgObj.width}x${imgObj.height}`;
-                
-                const totalTransform = pdfjsLib.Util.transform(viewport.transform, currentCTM);
-                const p1 = pdfjsLib.Util.transform(totalTransform, [0, 0]);
-                const p2 = pdfjsLib.Util.transform(totalTransform, [1, 1]);
+            if (imgObj && imgObj.width && imgObj.height) {
+              const key = `${imgObj.width}x${imgObj.height}`;
+              const pdfX = currentCTM[4];
+              const rawPdfY = currentCTM[5];
+              const pdfW = Math.abs(currentCTM[0]);
+              const pdfH = Math.abs(currentCTM[3]);
 
-                let pdfX = Math.min(p1[0], p2[0]);
-                let pdfY = Math.min(p1[1], p2[1]);
-                let pdfW = Math.abs(p2[0] - p1[0]) || imgObj.width;
-                let pdfH = Math.abs(p2[1] - p1[1]) || imgObj.height;
+              const [vx, vy] = viewport.convertToViewportPoint(pdfX, rawPdfY);
+              const topY = vy - pdfH;
+              const bbox = { page: p, pdfX: vx, pdfY: topY, pdfW: pdfW, pdfH: pdfH };
 
-                const bbox = {
-                  page: p,
-                  x: pdfX,
-                  y: pdfY,
-                  width: pdfW,
-                  height: pdfH
-                };
+              if (!imageMap.has(key)) {
+                const cvs = document.createElement('canvas');
+                cvs.width = imgObj.width;
+                cvs.height = imgObj.height;
+                const ctx = cvs.getContext('2d');
 
-                if (!imageMap.has(key)) {
-                  const cvs = document.createElement('canvas');
-                  cvs.width = imgObj.width;
-                  cvs.height = imgObj.height;
-                  const ctx = cvs.getContext('2d');
-                  if (imgObj.data) {
-                    const imgData = ctx.createImageData(imgObj.width, imgObj.height);
-                    if (imgObj.data.length === imgObj.width * imgObj.height * 4) {
-                      imgData.data.set(imgObj.data);
-                    } else {
-                      for (let j = 0, k = 0; j < imgObj.data.length; j += 3, k += 4) {
-                        imgData.data[k] = imgObj.data[j];
-                        imgData.data[k+1] = imgObj.data[j+1];
-                        imgData.data[k+2] = imgObj.data[j+2];
-                        imgData.data[k+3] = 255;
-                      }
+                if (imgObj.data) {
+                  const imgData = ctx.createImageData(imgObj.width, imgObj.height);
+                  if (imgObj.data.length === imgObj.width * imgObj.height * 4) {
+                    imgData.data.set(imgObj.data);
+                  } else {
+                    for (let j = 0, k = 0; j < imgObj.data.length; j += 3, k += 4) {
+                      imgData.data[k] = imgObj.data[j];
+                      imgData.data[k+1] = imgObj.data[j+1];
+                      imgData.data[k+2] = imgObj.data[j+2];
+                      imgData.data[k+3] = 255;
                     }
-                    ctx.putImageData(imgData, 0, 0);
                   }
-
-                  imageMap.set(key, {
-                    key: key,
-                    width: imgObj.width,
-                    height: imgObj.height,
-                    src: cvs.toDataURL(),
-                    bboxes: [bbox],
-                    pages: new Set([p])
-                  });
-                } else {
-                  const entry = imageMap.get(key);
-                  entry.pages.add(p);
-                  entry.bboxes.push(bbox);
+                  ctx.putImageData(imgData, 0, 0);
                 }
+
+                imageMap.set(key, { key, previewUrl: cvs.toDataURL(), bboxes: [bbox], pages: new Set([p]) });
+              } else {
+                const entry = imageMap.get(key);
+                entry.bboxes.push(bbox);
+                entry.pages.add(p);
               }
-            } catch (e) {}
-          }
-        }
-      } catch (e) {}
-    }
-
-    textCandidates = Array.from(textMap.values())
-      .map(t => ({ ...t, count: t.pages.size }))
-      .filter(t => t.count >= 2);
-
-    imageCandidates = Array.from(imageMap.values())
-      .map(img => ({ ...img, count: img.pages.size }))
-      .filter(img => img.count >= 2);
-
-    document.getElementById('subText').innerText = `텍스트 후보 (${textCandidates.length})`;
-    document.getElementById('subImg').innerText = `반복 이미지 후보 (${imageCandidates.length})`;
-
-    renderCandidates();
-  }
-
-  function renderCandidates() {
-    const grid = document.getElementById('candidateGrid');
-
-    if (currentSubTab === 'text') {
-      if (textCandidates.length === 0) {
-        grid.innerHTML = '<div style="text-align:center; color:#9ca3af; padding:20px;">2개 이상 페이지에서 반복 등장하는 텍스트 워터마크가 없습니다.</div>';
-        return;
-      }
-      grid.innerHTML = textCandidates.map((item, idx) => `
-        <div class="candidate-card">
-          <input type="checkbox" id="tc_${idx}" value="${idx}" style="width:18px; height:18px;">
-          <label for="tc_${idx}" style="flex:1; cursor:pointer;">
-            <div style="font-size:0.95rem; font-weight:600; color:#1e293b;">${escapeHtml(item.text)}</div>
-            <div style="font-size:0.8rem; color:#4f46e5; font-weight:600; margin-top:4px;">${item.count}개 페이지 반복 등장</div>
-          </label>
-        </div>
-      `).join('');
-    } else {
-      if (imageCandidates.length === 0) {
-        grid.innerHTML = '<div style="text-align:center; color:#9ca3af; padding:20px;">2개 이상 페이지에서 반복 등장하는 이미지 워터마크가 없습니다.</div>';
-        return;
-      }
-      grid.innerHTML = imageCandidates.map((item, idx) => `
-        <div class="candidate-card">
-          <input type="checkbox" id="ic_${idx}" value="${idx}" style="width:20px; height:20px;">
-          <img src="${item.src}">
-          <label for="ic_${idx}" style="flex:1; cursor:pointer;">
-            <div style="font-size:0.95rem; font-weight:700; color:#1f2937;">이미지 (${item.width} x ${item.height})</div>
-            <div style="font-size:0.85rem; color:#4f46e5; font-weight:600; margin-top:4px;">${item.count}개 페이지 반복 등장</div>
-          </label>
-        </div>
-      `).join('');
-    }
-  }
-
-  async function estimateSkewAngle(pageNum) {
-    if (!pdfJsDoc) return 0;
-
-    try {
-      const page = await pdfJsDoc.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const items = textContent.items.filter(item => item.str.trim().length > 1);
-
-      if (items.length < 5) return 0;
-
-      const slopes = [];
-
-      for (let i = 0; i < items.length; i++) {
-        for (let j = i + 1; j < items.length; j++) {
-          const itemA = items[i];
-          const itemB = items[j];
-
-          const xA = itemA.transform[4];
-          const yA = itemA.transform[5];
-          const xB = itemB.transform[4];
-          const yB = itemB.transform[5];
-
-          const dx = xB - xA;
-          const dy = yB - yA;
-
-          if (Math.abs(dx) > 50 && Math.abs(dy) < 30) {
-            const angleRad = Math.atan2(dy, dx);
-            const angleDeg = (angleRad * 180) / Math.PI;
-
-            if (Math.abs(angleDeg) <= 8) {
-              slopes.push(angleDeg);
             }
           }
         }
-      }
-
-      if (slopes.length === 0) return 0;
-
-      slopes.sort((a, b) => a - b);
-      const medianAngle = slopes[Math.floor(slopes.length / 2)];
-
-      if (Math.abs(medianAngle) < 0.5) {
-        return 0;
-      }
-
-      return -medianAngle;
-    } catch (e) {
-      console.error("Text-based deskew error:", e);
-      return 0;
-    }
-  }
-
-  async function autoDeskewAllPages() {
-    if (!pdfJsDoc) return;
-    
-    const btn = document.getElementById('deskewBtn');
-    btn.disabled = true;
-
-    let adjustedCount = 0;
-
-    for (let i = 0; i < activePages.length; i++) {
-      const p = activePages[i];
-      const pct = Math.round(((i + 1) / activePages.length) * 100);
-      
-      currentActiveIndex = i;
-      pageRotations.delete(p);
-
-      const angle = await estimateSkewAngle(p);
-      
-      if (angle !== 0) {
-        pageRotations.set(p, angle);
-        adjustedCount++;
-        showToast(`[${i + 1}/${activePages.length} 페이지] 본문 기울기 감지 (${angle.toFixed(1)}° 보정) (${pct}%)`);
-      } else {
-        showToast(`[${i + 1}/${activePages.length} 페이지] 본문 수평 정상 (패스) (${pct}%)`);
-      }
-
-      await renderEditedPage(p);
-      await new Promise(r => setTimeout(r, 20));
-    }
-
-    currentActiveIndex = 0;
-    await renderEditedPage(activePages[0]);
-    btn.disabled = false;
-    showToast(`검사 완료: 전체 ${activePages.length}개 중 ${adjustedCount}개 페이지의 기울기가 보정되었습니다!`);
-  }
-
-  function applyEditToPreview() {
-    const deleteStr = document.getElementById('deletePagesInput').value.trim();
-    const deleteSet = parsePages(deleteStr, totalPages);
-
-    activePages = [];
-    for (let p = 1; p <= totalPages; p++) {
-      if (!deleteSet.has(p - 1)) {
-        activePages.push(p);
+      } catch (e) {
+        console.warn('이미지 추출 경고:', e);
       }
     }
 
-    if (activePages.length === 0) {
-      showToast('경고: 모든 페이지가 삭제 지정되었습니다.', true);
-      return;
+    textCandidates = Array.from(textMap.values()).filter(item => item.pages.size >= 2).sort((a, b) => b.pages.size - a.pages.size);
+    imageCandidates = Array.from(imageMap.values()).filter(item => item.pages.size >= 2).sort((a, b) => b.pages.size - a.pages.size);
+
+    document.getElementById('textCandBadge').innerText = `(${textCandidates.length})`;
+    document.getElementById('imgCandBadge').innerText = `(${imageCandidates.length})`;
+
+    renderCandidateGrid();
+  }
+
+  function renderCandidateGrid() {
+    const grid = document.getElementById('candidateGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (currentSubTab === 'text') {
+      if (textCandidates.length === 0) {
+        grid.innerHTML = `<div style="text-align:center; color:#9ca3af; padding:30px;">감지된 텍스트 형태의 워터마크가 없습니다.</div>`;
+        return;
+      }
+      textCandidates.forEach((cand, idx) => {
+        const card = document.createElement('div');
+        card.className = 'candidate-card';
+        card.innerHTML = `
+          <div class="candidate-info">
+            <input type="checkbox" id="wm_text_check_${idx}">
+            <span class="candidate-text">${cand.text}</span>
+          </div>
+          <span class="candidate-count">${cand.pages.size}개 페이지 감지</span>
+        `;
+        grid.appendChild(card);
+      });
+    } else {
+      if (imageCandidates.length === 0) {
+        grid.innerHTML = `<div style="text-align:center; color:#9ca3af; padding:30px;">감지된 반복 이미지 형태의 워터마크가 없습니다.</div>`;
+        return;
+      }
+      imageCandidates.forEach((cand, idx) => {
+        const card = document.createElement('div');
+        card.className = 'candidate-card';
+        card.innerHTML = `
+          <div class="candidate-info">
+            <input type="checkbox" id="wm_img_check_${idx}">
+            <img class="candidate-img-preview" src="${cand.previewUrl}">
+            <span class="candidate-text">반복 이미지 패치 (${cand.key})</span>
+          </div>
+          <span class="candidate-count">${cand.pages.size}개 페이지 감지</span>
+        `;
+        grid.appendChild(card);
+      });
+    }
+  }
+
+  async function applyCheckedWatermarks() {
+    let appliedCount = 0;
+
+    if (currentSubTab === 'text') {
+      textCandidates.forEach((cand, idx) => {
+        const chk = document.getElementById(`wm_text_check_${idx}`);
+        if (chk && chk.checked) {
+          cand.bboxes.forEach(bbox => {
+            const pageNum = bbox.page;
+            if (!manualMasks.has(pageNum)) manualMasks.set(pageNum, []);
+            manualMasks.get(pageNum).push({
+              id: 'wm_mask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+              x: bbox.pdfX,
+              y: bbox.pdfY,
+              w: bbox.pdfW,
+              h: bbox.pdfH
+            });
+            appliedCount++;
+          });
+        }
+      });
+    } else {
+      imageCandidates.forEach((cand, idx) => {
+        const chk = document.getElementById(`wm_img_check_${idx}`);
+        if (chk && chk.checked) {
+          cand.bboxes.forEach(bbox => {
+            const pageNum = bbox.page;
+            if (!manualMasks.has(pageNum)) manualMasks.set(pageNum, []);
+            manualMasks.get(pageNum).push({
+              id: 'wm_mask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+              x: bbox.pdfX,
+              y: bbox.pdfY,
+              w: bbox.pdfW,
+              h: bbox.pdfH
+            });
+            appliedCount++;
+          });
+        }
+      });
     }
 
-    currentActiveIndex = 0;
-    renderEditedPage(activePages[currentActiveIndex]);
-    showToast(`편집 적용 완료! (남은 페이지: ${activePages.length}개 / 전체: ${totalPages}개)`);
-  }
-
-  function zoomIn() {
-    if (renderZoomScale < 3.0) {
-      renderZoomScale += 0.25;
-      updateZoomUI();
-    }
-  }
-
-  function zoomOut() {
-    if (renderZoomScale > 0.5) {
-      renderZoomScale -= 0.25;
-      updateZoomUI();
-    }
-  }
-
-  function zoomReset() {
-    renderZoomScale = 1.25;
-    updateZoomUI();
-  }
-
-  function updateZoomUI() {
-    const pct = Math.round((renderZoomScale / 1.25) * 100);
-    document.getElementById('zoomScaleDisplay').innerText = `${pct}%`;
     if (activePages.length > 0) {
-      renderEditedPage(activePages[currentActiveIndex]);
+      syncOverlayBoxes(activePages[currentActiveIndex]);
     }
-  }
-
-  async function renderRawPage(p) {
-    if (!pdfJsDoc || !p) return;
-    const page = await pdfJsDoc.getPage(p);
-    const viewport = page.getViewport({ scale: renderZoomScale });
-
-    const canvas = document.getElementById('pdfCanvas');
-    const ctx = canvas.getContext('2d');
-
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-
-    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-    document.getElementById('pageIndicator').innerText = `페이지 ${p} (1 / ${totalPages})`;
     
-    syncOverlayBoxes(p);
+    alert('편집이 완료 되었습니다.');
   }
 
-  async function renderEditedPage(p) {
-    if (!pdfJsDoc || !p) return;
-    const page = await pdfJsDoc.getPage(p);
-    const viewport = page.getViewport({ scale: renderZoomScale });
-
-    const canvas = document.getElementById('pdfCanvas');
-    const ctx = canvas.getContext('2d');
-
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-
-    const angle = pageRotations.get(p) || 0;
-    if (angle !== 0) {
-      ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate((angle * Math.PI) / 180);
-      ctx.translate(-canvas.width / 2, -canvas.height / 2);
-    }
-
-    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-
-    renderMaskOnContext(ctx, p, viewport, renderZoomScale);
-
-    if (angle !== 0) {
-      ctx.restore();
-    }
-
-    document.getElementById('pageIndicator').innerText = `페이지 ${p} (${currentActiveIndex + 1} / ${activePages.length})`;
-
-    syncOverlayBoxes(p);
-  }
-
-  function renderMaskOnContext(ctx, p, viewport, renderScale) {
-    const selTextIdxs = Array.from(document.querySelectorAll('#candidateGrid input[id^="tc_"]:checked')).map(cb => parseInt(cb.value));
-    const selImgIdxs = Array.from(document.querySelectorAll('#candidateGrid input[id^="ic_"]:checked')).map(cb => parseInt(cb.value));
-    
-    ctx.fillStyle = '#ffffff';
-
-    for (const tIdx of selTextIdxs) {
-      const item = textCandidates[tIdx];
-      if (!item || !item.bboxes) continue;
-      for (const bbox of item.bboxes) {
-        if (bbox.page === p) {
-          ctx.fillRect(
-            bbox.x * renderScale, 
-            bbox.y * renderScale, 
-            (bbox.width + 4) * renderScale, 
-            (bbox.height + 4) * renderScale
-          );
-        }
-      }
-    }
-
-    for (const iIdx of selImgIdxs) {
-      const item = imageCandidates[iIdx];
-      if (!item || !item.bboxes) continue;
-      for (const bbox of item.bboxes) {
-        if (bbox.page === p) {
-          ctx.fillRect(0, viewport.height - (30 * renderScale), viewport.width, 30 * renderScale);
-        }
-      }
-    }
-
-    if (manualMasks.has(p)) {
-      const list = manualMasks.get(p);
-      for (const box of list) {
-        const rx = box.normX * viewport.width;
-        const ry = box.normY * viewport.height;
-        const rw = box.normW * viewport.width;
-        const rh = box.normH * viewport.height;
-
-        ctx.fillRect(rx, ry, rw, rh);
-      }
-    }
-
-    if (textBoxes.has(p)) {
-      const list = textBoxes.get(p);
-      for (const box of list) {
-        const rx = box.normX * viewport.width;
-        const ry = box.normY * viewport.height;
-        const rw = box.normW * viewport.width;
-        const rh = box.normH * viewport.height;
-
-        ctx.fillStyle = box.bgColor || '#ffffff';
-        ctx.fillRect(rx, ry, rw, rh);
-
-        ctx.fillStyle = box.textColor || '#000000';
-        const fontStyle = box.isItalic ? 'italic ' : '';
-        const fontWeight = box.isBold ? 'bold ' : '';
-        const scaledFontSize = (box.fontSize || 16) * (renderScale / 1.25);
-        ctx.font = `${fontStyle}${fontWeight}${scaledFontSize}px sans-serif`;
-        ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
-
-        ctx.fillText(box.text || '', rx + rw / 2, ry + rh / 2);
-      }
-    }
-  }
-
-  function syncOverlayBoxes(p) {
+  function syncOverlayBoxes(pageNum) {
     const overlay = document.getElementById('maskOverlay');
+    if (!overlay) return;
     overlay.innerHTML = '';
 
-    if (manualMasks.has(p)) {
-      const list = manualMasks.get(p);
-      list.forEach((box) => {
-        const elem = document.createElement('div');
-        elem.className = 'mask-box-element applied';
-        elem.dataset.id = box.id;
-        elem.dataset.type = 'mask';
+    (manualMasks.get(pageNum) || []).forEach(box => createBoxElementOnOverlay(box, 'mask'));
+    (textBoxes.get(pageNum) || []).forEach(box => createBoxElementOnOverlay(box, 'text'));
+    (imageBoxes.get(pageNum) || []).forEach(box => createBoxElementOnOverlay(box, 'image'));
+    (linkBoxes.get(pageNum) || []).forEach(box => createBoxElementOnOverlay(box, 'link'));
+  }
 
-        elem.style.left = (box.normX * 100) + '%';
-        elem.style.top = (box.normY * 100) + '%';
-        elem.style.width = (box.normW * 100) + '%';
-        elem.style.height = (box.normH * 100) + '%';
+  function createBoxElementOnOverlay(box, type) {
+    const overlay = document.getElementById('maskOverlay');
+    const elem = document.createElement('div');
+    elem.id = box.id;
 
-        elem.innerHTML = `
-          <div class="mask-close-btn" onclick="deleteBox('${box.id}', 'mask', event)">×</div>
-          <div class="mask-handle handle-nw" data-handle="nw"></div>
-          <div class="mask-handle handle-ne" data-handle="ne"></div>
-          <div class="mask-handle handle-sw" data-handle="sw"></div>
-          <div class="mask-handle handle-se" data-handle="se"></div>
-        `;
-
-        overlay.appendChild(elem);
-      });
+    if (type === 'mask') {
+      elem.className = 'mask-box-element';
+    } else if (type === 'text') {
+      elem.className = `text-box-element ${selectedTextBoxId === box.id ? 'selected' : ''}`;
+      elem.innerText = box.text || '';
+      elem.style.color = box.color || '#000000';
+      elem.style.backgroundColor = box.bgColor || '#ffffff';
+      elem.style.fontSize = `${(box.fontSize || 16) * (renderZoomScale / 1.25)}px`;
+    } else if (type === 'image') {
+      elem.className = 'img-box-element';
+      const img = document.createElement('img');
+      img.src = box.dataUrl;
+      elem.appendChild(img);
+    } else if (type === 'link') {
+      elem.className = `link-box-element ${selectedLinkBoxId === box.id ? 'selected' : ''}`;
+      const badge = document.createElement('div');
+      badge.className = 'link-tag-badge';
+      badge.innerText = box.linkType === 'url' ? `🔗 ${box.targetUrl || 'URL'}` : `📄 p.${box.targetPage || 1}`;
+      elem.appendChild(badge);
     }
 
-    if (textBoxes.has(p)) {
-      const list = textBoxes.get(p);
-      list.forEach((box) => {
-        const elem = document.createElement('div');
-        elem.className = 'text-box-element' + (box.id === selectedTextBoxId ? ' selected' : '');
-        elem.dataset.id = box.id;
-        elem.dataset.type = 'text';
+    elem.style.left = `${box.x * renderZoomScale}px`;
+    elem.style.top = `${box.y * renderZoomScale}px`;
+    elem.style.width = `${box.w * renderZoomScale}px`;
+    elem.style.height = `${box.h * renderZoomScale}px`;
 
-        elem.style.left = (box.normX * 100) + '%';
-        elem.style.top = (box.normY * 100) + '%';
-        elem.style.width = (box.normW * 100) + '%';
-        elem.style.height = (box.normH * 100) + '%';
+    ['nw', 'ne', 'sw', 'se'].forEach(pos => {
+      const h = document.createElement('div');
+      h.className = `mask-handle handle-${pos}`;
+      h.dataset.handle = pos;
+      h.dataset.boxId = box.id;
+      h.dataset.boxType = type;
+      elem.appendChild(h);
+    });
 
-        elem.style.backgroundColor = box.bgColor || '#ffffff';
-        elem.style.color = box.textColor || '#000000';
-        elem.style.fontSize = Math.round((box.fontSize || 16) * (renderZoomScale / 1.25)) + 'px';
-        elem.style.fontWeight = box.isBold ? 'bold' : 'normal';
-        elem.style.fontStyle = box.isItalic ? 'italic' : 'normal';
+    const closeBtn = document.createElement('div');
+    closeBtn.className = 'mask-close-btn';
+    closeBtn.innerText = '✕';
+    closeBtn.onclick = (e) => { e.stopPropagation(); removeBox(box.id, type); };
+    elem.appendChild(closeBtn);
 
-        elem.innerText = box.text || '새 텍스트';
+    elem.onclick = (e) => {
+      e.stopPropagation();
+      if (type === 'text') selectTextBox(box.id);
+      if (type === 'link') selectLinkBox(box.id);
+    };
 
-        elem.innerHTML += `
-          <div class="mask-close-btn" onclick="deleteBox('${box.id}', 'text', event)">×</div>
-          <div class="mask-handle handle-nw" data-handle="nw"></div>
-          <div class="mask-handle handle-ne" data-handle="ne"></div>
-          <div class="mask-handle handle-sw" data-handle="sw"></div>
-          <div class="mask-handle handle-se" data-handle="se"></div>
-        `;
-
-        overlay.appendChild(elem);
-      });
-    }
+    overlay.appendChild(elem);
   }
 
   function addTextBoxOverCurrentPage() {
-    saveUndoState('ADD_TEXT');
-
-    const p = activePages[currentActiveIndex];
-    const newId = 'tb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-
-    const newBox = {
-      id: newId,
-      page: p,
-      normX: 0.35,
-      normY: 0.45,
-      normW: 0.3,
-      normH: 0.08,
-      text: '수정할 텍스트',
-      fontSize: 16,
-      textColor: '#000000',
-      bgColor: '#ffffff',
-      isBold: false,
-      isItalic: false
+    const pageNum = activePages[currentActiveIndex];
+    const newBox = { 
+      id: 'text_' + Date.now(), 
+      x: 50, y: 50, w: 150, h: 40, 
+      text: '텍스트 입력', fontSize: 16, color: '#000000', bgColor: '#ffffff' 
     };
-
-    if (!textBoxes.has(p)) textBoxes.set(p, []);
-    textBoxes.get(p).push(newBox);
-
-    selectTextBox(newBox);
-    syncOverlayBoxes(p);
-    showToast('텍스트 상자가 추가되었습니다.');
+    if (!textBoxes.has(pageNum)) textBoxes.set(pageNum, []);
+    textBoxes.get(pageNum).push(newBox);
+    syncOverlayBoxes(pageNum);
+    selectTextBox(newBox.id);
   }
 
-  function selectTextBox(box) {
-    selectedTextBoxId = box.id;
-    document.getElementById('activeTextContent').value = box.text || '';
-    document.getElementById('activeFontSize').value = box.fontSize || 16;
-    document.getElementById('activeTextColor').value = box.textColor || '#000000';
-    document.getElementById('activeBgColor').value = box.bgColor || '#ffffff';
-    document.getElementById('activeFontBold').checked = !!box.isBold;
-    document.getElementById('activeFontItalic').checked = !!box.isItalic;
+  function selectTextBox(id) {
+    selectedTextBoxId = id;
+    const pageNum = activePages[currentActiveIndex];
+    const box = (textBoxes.get(pageNum) || []).find(b => b.id === id);
+
+    if (box) {
+      if (document.getElementById('activeTextContent')) document.getElementById('activeTextContent').value = box.text || '';
+      if (document.getElementById('activeFontSize')) document.getElementById('activeFontSize').value = box.fontSize || 16;
+      if (document.getElementById('activeTextColor')) document.getElementById('activeTextColor').value = box.color || '#000000';
+      if (document.getElementById('activeBgColor')) document.getElementById('activeBgColor').value = box.bgColor || '#ffffff';
+    }
+    syncOverlayBoxes(pageNum);
   }
 
   function updateActiveTextBox() {
     if (!selectedTextBoxId) return;
-    const p = activePages[currentActiveIndex];
-    if (!textBoxes.has(p)) return;
+    const pageNum = activePages[currentActiveIndex];
+    const box = (textBoxes.get(pageNum) || []).find(b => b.id === selectedTextBoxId);
 
-    const list = textBoxes.get(p);
-    const box = list.find(b => b.id === selectedTextBoxId);
-    if (!box) return;
+    if (box) {
+      box.text = document.getElementById('activeTextContent')?.value || '';
+      box.fontSize = parseInt(document.getElementById('activeFontSize')?.value) || 16;
+      box.color = document.getElementById('activeTextColor')?.value || '#000000';
+      box.bgColor = document.getElementById('activeBgColor')?.value || '#ffffff';
+      syncOverlayBoxes(pageNum);
+    }
+  }
 
-    saveUndoState('UPDATE_TEXT');
+  function addLinkBoxOverCurrentPage() {
+    const pageNum = activePages[currentActiveIndex];
+    const newBox = { id: 'link_' + Date.now(), x: 50, y: 50, w: 180, h: 40, linkType: 'page', targetPage: 1, targetUrl: 'https://' };
+    if (!linkBoxes.has(pageNum)) linkBoxes.set(pageNum, []);
+    linkBoxes.get(pageNum).push(newBox);
+    syncOverlayBoxes(pageNum);
+    selectLinkBox(newBox.id);
+  }
 
-    box.text = document.getElementById('activeTextContent').value;
-    box.fontSize = parseInt(document.getElementById('activeFontSize').value) || 16;
-    box.textColor = document.getElementById('activeTextColor').value;
-    box.bgColor = document.getElementById('activeBgColor').value;
-    box.isBold = document.getElementById('activeFontBold').checked;
-    box.isItalic = document.getElementById('activeFontItalic').checked;
+  function selectLinkBox(id) {
+    selectedLinkBoxId = id;
+    const pageNum = activePages[currentActiveIndex];
+    const box = (linkBoxes.get(pageNum) || []).find(b => b.id === id);
 
-    syncOverlayBoxes(p);
+    if (box) {
+      if (document.getElementById('activeLinkType')) document.getElementById('activeLinkType').value = box.linkType || 'page';
+      if (document.getElementById('activeLinkTargetPage')) document.getElementById('activeLinkTargetPage').value = box.targetPage || 1;
+      if (document.getElementById('activeLinkTargetUrl')) document.getElementById('activeLinkTargetUrl').value = box.targetUrl || 'https://';
+      
+      const pageGroup = document.getElementById('linkPageGroup');
+      const urlGroup = document.getElementById('linkUrlGroup');
+      if (box.linkType === 'url') {
+        if (pageGroup) pageGroup.style.display = 'none';
+        if (urlGroup) urlGroup.style.display = 'flex';
+      } else {
+        if (pageGroup) pageGroup.style.display = 'flex';
+        if (urlGroup) urlGroup.style.display = 'none';
+      }
+    }
+    syncOverlayBoxes(pageNum);
+  }
+
+  function updateActiveLinkBox() {
+    if (!selectedLinkBoxId) return;
+    const pageNum = activePages[currentActiveIndex];
+    const box = (linkBoxes.get(pageNum) || []).find(b => b.id === selectedLinkBoxId);
+
+    if (box) {
+      box.linkType = document.getElementById('activeLinkType')?.value || 'page';
+      box.targetPage = parseInt(document.getElementById('activeLinkTargetPage')?.value) || 1;
+      box.targetUrl = document.getElementById('activeLinkTargetUrl')?.value || '';
+      syncOverlayBoxes(pageNum);
+    }
+  }
+
+  function removeBox(id, type) {
+    const pageNum = activePages[currentActiveIndex];
+    if (type === 'mask') manualMasks.set(pageNum, (manualMasks.get(pageNum) || []).filter(b => b.id !== id));
+    else if (type === 'text') textBoxes.set(pageNum, (textBoxes.get(pageNum) || []).filter(b => b.id !== id));
+    else if (type === 'image') imageBoxes.set(pageNum, (imageBoxes.get(pageNum) || []).filter(b => b.id !== id));
+    else if (type === 'link') linkBoxes.set(pageNum, (linkBoxes.get(pageNum) || []).filter(b => b.id !== id));
+    syncOverlayBoxes(pageNum);
   }
 
   function initOverlayEvents() {
     const overlay = document.getElementById('maskOverlay');
+    if (!overlay) return;
 
-    overlay.addEventListener('mousedown', (e) => {
-      if (e.target.classList.contains('mask-close-btn')) return;
-
-      const overlayRect = overlay.getBoundingClientRect();
-
-      if (e.target.classList.contains('mask-handle')) {
-        saveUndoState('RESIZE_BOX');
+    overlay.onmousedown = (e) => {
+      if (e.target.dataset.handle) {
         isResizing = true;
+        activeBoxId = e.target.dataset.boxId;
+        activeBoxType = e.target.dataset.boxType;
         resizeHandle = e.target.dataset.handle;
-        const boxElem = e.target.parentElement;
-        activeBoxId = boxElem.dataset.id;
-        activeBoxType = boxElem.dataset.type;
-
-        initialBoxRect = {
-          left: boxElem.offsetLeft,
-          top: boxElem.offsetTop,
-          width: boxElem.offsetWidth,
-          height: boxElem.offsetHeight,
-          mouseX: e.clientX,
-          mouseY: e.clientY
-        };
-        e.stopPropagation();
         return;
       }
 
-      if (e.target.classList.contains('mask-box-element') || e.target.classList.contains('text-box-element')) {
-        saveUndoState('MOVE_BOX');
+      if (e.target.classList.contains('mask-box-element') ||
+          e.target.classList.contains('text-box-element') ||
+          e.target.classList.contains('img-box-element') ||
+          e.target.classList.contains('link-box-element')) {
         isMoving = true;
-        const boxElem = e.target;
-        activeBoxId = boxElem.dataset.id;
-        activeBoxType = boxElem.dataset.type;
+        activeBoxId = e.target.id;
+        if (e.target.classList.contains('mask-box-element')) activeBoxType = 'mask';
+        else if (e.target.classList.contains('text-box-element')) activeBoxType = 'text';
+        else if (e.target.classList.contains('img-box-element')) activeBoxType = 'image';
+        else if (e.target.classList.contains('link-box-element')) activeBoxType = 'link';
 
-        if (activeBoxType === 'text') {
-          const p = activePages[currentActiveIndex];
-          const box = textBoxes.get(p)?.find(b => b.id === activeBoxId);
-          if (box) selectTextBox(box);
-        }
-
-        dragOffsetX = e.clientX - boxElem.getBoundingClientRect().left;
-        dragOffsetY = e.clientY - boxElem.getBoundingClientRect().top;
-        e.stopPropagation();
+        const rect = e.target.getBoundingClientRect();
+        dragOffsetX = e.clientX - rect.left;
+        dragOffsetY = e.clientY - rect.top;
         return;
       }
 
-      isCreating = true;
-      createStartX = e.clientX - overlayRect.left;
-      createStartY = e.clientY - overlayRect.top;
+      if (currentMainTab === 'masking') {
+        isCreating = true;
+        const overlayRect = overlay.getBoundingClientRect();
+        createStartX = e.clientX - overlayRect.left;
+        createStartY = e.clientY - overlayRect.top;
 
-      tempBoxElem = document.createElement('div');
-      tempBoxElem.className = 'mask-box-element';
-      tempBoxElem.style.left = createStartX + 'px';
-      tempBoxElem.style.top = createStartY + 'px';
-      tempBoxElem.style.width = '0px';
-      tempBoxElem.style.height = '0px';
-      overlay.appendChild(tempBoxElem);
-    });
+        tempBoxElem = document.createElement('div');
+        tempBoxElem.className = 'mask-box-element';
+        tempBoxElem.style.left = `${createStartX}px`;
+        tempBoxElem.style.top = `${createStartY}px`;
+        tempBoxElem.style.width = '0px'; tempBoxElem.style.height = '0px';
+        overlay.appendChild(tempBoxElem);
+      }
+    };
 
-    window.addEventListener('mousemove', (e) => {
+    overlay.onmousemove = (e) => {
       const overlayRect = overlay.getBoundingClientRect();
-
       if (isCreating && tempBoxElem) {
-        const curX = e.clientX - overlayRect.left;
-        const curY = e.clientY - overlayRect.top;
-
-        const left = Math.min(createStartX, curX);
-        const top = Math.min(createStartY, curY);
-        const width = Math.abs(curX - createStartX);
-        const height = Math.abs(curY - createStartY);
-
-        tempBoxElem.style.left = left + 'px';
-        tempBoxElem.style.top = top + 'px';
-        tempBoxElem.style.width = width + 'px';
-        tempBoxElem.style.height = height + 'px';
+        const curX = e.clientX - overlayRect.left, curY = e.clientY - overlayRect.top;
+        tempBoxElem.style.width = `${Math.abs(curX - createStartX)}px`;
+        tempBoxElem.style.height = `${Math.abs(curY - createStartY)}px`;
+        tempBoxElem.style.left = `${Math.min(createStartX, curX)}px`;
+        tempBoxElem.style.top = `${Math.min(createStartY, curY)}px`;
+        return;
       }
 
-      else if (isMoving && activeBoxId) {
-        const p = activePages[currentActiveIndex];
-        const map = activeBoxType === 'mask' ? manualMasks : textBoxes;
-        const list = map.get(p);
-        const box = list?.find(b => b.id === activeBoxId);
-        if (!box) return;
+      const pageNum = activePages[currentActiveIndex];
+      let targetMap = manualMasks;
+      if (activeBoxType === 'text') targetMap = textBoxes;
+      if (activeBoxType === 'image') targetMap = imageBoxes;
+      if (activeBoxType === 'link') targetMap = linkBoxes;
 
-        let newLeft = e.clientX - overlayRect.left - dragOffsetX;
-        let newTop = e.clientY - overlayRect.top - dragOffsetY;
+      const box = (targetMap.get(pageNum) || []).find(b => b.id === activeBoxId);
+      if (!box) return;
 
-        newLeft = Math.max(0, Math.min(newLeft, overlayRect.width - (box.normW * overlayRect.width)));
-        newTop = Math.max(0, Math.min(newTop, overlayRect.height - (box.normH * overlayRect.height)));
+      if (isMoving) {
+        box.x = Math.max(0, (e.clientX - overlayRect.left - dragOffsetX) / renderZoomScale);
+        box.y = Math.max(0, (e.clientY - overlayRect.top - dragOffsetY) / renderZoomScale);
+        syncOverlayBoxes(pageNum);
+      } else if (isResizing) {
+        const mouseX = (e.clientX - overlayRect.left) / renderZoomScale;
+        const mouseY = (e.clientY - overlayRect.top) / renderZoomScale;
 
-        box.normX = newLeft / overlayRect.width;
-        box.normY = newTop / overlayRect.height;
+        if (activeBoxType === 'image' && box.aspectRatio && !e.shiftKey) {
+          let newW = box.w;
+          if (resizeHandle.includes('e')) newW = Math.max(20, mouseX - box.x);
+          else if (resizeHandle.includes('w')) newW = Math.max(20, (box.x + box.w) - mouseX);
 
-        syncOverlayBoxes(p);
-      }
-
-      else if (isResizing && activeBoxId && initialBoxRect) {
-        const p = activePages[currentActiveIndex];
-        const map = activeBoxType === 'mask' ? manualMasks : textBoxes;
-        const list = map.get(p);
-        const box = list?.find(b => b.id === activeBoxId);
-        if (!box) return;
-
-        const dx = e.clientX - initialBoxRect.mouseX;
-        const dy = e.clientY - initialBoxRect.mouseY;
-
-        let l = initialBoxRect.left;
-        let t = initialBoxRect.top;
-        let w = initialBoxRect.width;
-        let h = initialBoxRect.height;
-
-        if (resizeHandle.includes('e')) w = Math.max(10, initialBoxRect.width + dx);
-        if (resizeHandle.includes('s')) h = Math.max(10, initialBoxRect.height + dy);
-        if (resizeHandle.includes('w')) {
-          const nw = Math.max(10, initialBoxRect.width - dx);
-          l = initialBoxRect.left + (initialBoxRect.width - nw);
-          w = nw;
+          box.w = newW;
+          box.h = newW * box.aspectRatio;
+        } else {
+          if (resizeHandle.includes('e')) box.w = Math.max(20, mouseX - box.x);
+          if (resizeHandle.includes('s')) box.h = Math.max(15, mouseY - box.y);
         }
-        if (resizeHandle.includes('n')) {
-          const nh = Math.max(10, initialBoxRect.height - dy);
-          t = initialBoxRect.top + (initialBoxRect.height - nh);
-          h = nh;
-        }
-
-        box.normX = l / overlayRect.width;
-        box.normY = t / overlayRect.height;
-        box.normW = w / overlayRect.width;
-        box.normH = h / overlayRect.height;
-
-        syncOverlayBoxes(p);
+        syncOverlayBoxes(pageNum);
       }
-    });
+    };
 
-    window.addEventListener('mouseup', (e) => {
-      const overlayRect = overlay.getBoundingClientRect();
-
+    overlay.onmouseup = () => {
       if (isCreating && tempBoxElem) {
-        const w = tempBoxElem.offsetWidth;
-        const h = tempBoxElem.offsetHeight;
+        const pageNum = activePages[currentActiveIndex];
+        const w = parseFloat(tempBoxElem.style.width) / renderZoomScale;
+        const h = parseFloat(tempBoxElem.style.height) / renderZoomScale;
+        const x = parseFloat(tempBoxElem.style.left) / renderZoomScale;
+        const y = parseFloat(tempBoxElem.style.top) / renderZoomScale;
 
         if (w > 10 && h > 10) {
-          saveUndoState('CREATE_MASK');
-
-          const p = activePages[currentActiveIndex];
-          const normX = tempBoxElem.offsetLeft / overlayRect.width;
-          const normY = tempBoxElem.offsetTop / overlayRect.height;
-          const normW = w / overlayRect.width;
-          const normH = h / overlayRect.height;
-
-          const newId = 'mb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-
-          if (!manualMasks.has(p)) manualMasks.set(p, []);
-          manualMasks.get(p).push({ id: newId, page: p, normX, normY, normW, normH });
-
-          showToast(`수동 가림 영역이 추가되었습니다.`);
+          if (!manualMasks.has(pageNum)) manualMasks.set(pageNum, []);
+          manualMasks.get(pageNum).push({ id: 'mask_' + Date.now(), x, y, w, h });
         }
-        tempBoxElem.remove();
-        tempBoxElem = null;
-        syncOverlayBoxes(activePages[currentActiveIndex]);
+        tempBoxElem.remove(); tempBoxElem = null;
+        syncOverlayBoxes(pageNum);
       }
-
-      isCreating = false;
-      isMoving = false;
-      isResizing = false;
+      isCreating = isMoving = isResizing = false;
       activeBoxId = null;
-    });
-  }
-
-  function deleteBox(id, type, e) {
-    if (e) e.stopPropagation();
-    saveUndoState('DELETE_BOX');
-
-    const p = activePages[currentActiveIndex];
-    const map = type === 'mask' ? manualMasks : textBoxes;
-    if (map.has(p)) {
-      const list = map.get(p).filter(b => b.id !== id);
-      map.set(p, list);
-      syncOverlayBoxes(p);
-      showToast('선택한 요소가 삭제되었습니다.');
-    }
-  }
-
-  async function processAndDownload() {
-    if (!pdfJsDoc) {
-      showToast('분석된 문서가 없습니다. 먼저 파일 분석을 진행해 주세요.', true);
-      return;
-    }
-
-    const btn = document.getElementById('downloadBtn');
-    btn.disabled = true;
-
-    try {
-      const deleteStr = document.getElementById('deletePagesInput').value.trim();
-      const deleteSet = parsePages(deleteStr, totalPages);
-
-      const newPdfDoc = await PDFLib.PDFDocument.create();
-      let processedCount = 0;
-
-      for (let p = 1; p <= totalPages; p++) {
-        if (deleteSet.has(p - 1)) continue;
-
-        processedCount++;
-        const pct = Math.round((processedCount / activePages.length) * 100);
-        showToast(`[${processedCount}/${activePages.length} 페이지] 새 PDF 생성 중... (${pct}%)`);
-        await new Promise(r => setTimeout(r, 0));
-
-        const page = await pdfJsDoc.getPage(p);
-        const captureScale = 2.0;
-        const viewport = page.getViewport({ scale: captureScale });
-
-        const workCanvas = document.createElement('canvas');
-        workCanvas.width = viewport.width;
-        workCanvas.height = viewport.height;
-        const workCtx = workCanvas.getContext('2d');
-
-        const angle = pageRotations.get(p) || 0;
-        if (angle !== 0) {
-          workCtx.save();
-          workCtx.translate(workCanvas.width / 2, workCanvas.height / 2);
-          workCtx.rotate((angle * Math.PI) / 180);
-          workCtx.translate(-workCanvas.width / 2, -workCanvas.height / 2);
-        }
-
-        await page.render({ canvasContext: workCtx, viewport: viewport }).promise;
-        renderMaskOnContext(workCtx, p, viewport, captureScale);
-
-        if (angle !== 0) workCtx.restore();
-
-        const imgDataUrl = workCanvas.toDataURL('image/png');
-        const embeddedImg = await newPdfDoc.embedPng(imgDataUrl);
-
-        const pageViewport = page.getViewport({ scale: 1.0 });
-        const pdfPage = newPdfDoc.addPage([pageViewport.width, pageViewport.height]);
-
-        pdfPage.drawImage(embeddedImg, {
-          x: 0,
-          y: 0,
-          width: pageViewport.width,
-          height: pageViewport.height,
-        });
-      }
-
-      showToast('PDF 파일 인코딩 중...');
-      const pdfBytes = await newPdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-
-      if (window.isSecureContext && 'showSaveFilePicker' in window) {
-        try {
-          const handle = await window.showSaveFilePicker({
-            suggestedName: 'cleaned_pdf.pdf',
-            types: [{
-              description: 'PDF Document',
-              accept: { 'application/pdf': ['.pdf'] }
-            }]
-          });
-          const writable = await handle.createWritable();
-          await writable.write(blob);
-          await writable.close();
-          showToast('지정한 폴더에 성공적으로 저장되었습니다!');
-          return;
-        } catch (pickerErr) {
-          if (pickerErr.name === 'AbortError') {
-            showToast('저장이 취소되었습니다.');
-            return;
-          }
-        }
-      }
-
-      fallbackDownload(blob);
-
-    } catch (err) {
-      console.error('다운로드 오류 발생:', err);
-      showToast('다운로드 도중 에러가 발생했습니다: ' + err.message, true);
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  function fallbackDownload(blob) {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'cleaned_pdf.pdf';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast('저장 완료! ');
-  }
-
-  function parsePages(str, max) {
-    const res = new Set();
-    if (!str) return res;
-    str.split(',').forEach(p => {
-      p = p.trim();
-      if (p.includes('-')) {
-        const [s, e] = p.split('-').map(Number);
-        if (s && e) {
-          for (let i = s; i <= e; i++) {
-            if (i >= 1 && i <= max) res.add(i - 1);
-          }
-        }
-      } else {
-        const num = Number(p);
-        if (num >= 1 && num <= max) res.add(num - 1);
-      }
-    });
-    return res;
+    };
   }
 
   function prevPage() {
-    if (currentActiveIndex > 0) { 
-      currentActiveIndex--; 
-      renderEditedPage(activePages[currentActiveIndex]); 
+    if (currentActiveIndex > 0) {
+      currentActiveIndex--;
+      renderRawPage(activePages[currentActiveIndex]);
     }
   }
 
   function nextPage() {
-    if (currentActiveIndex < activePages.length - 1) { 
-      currentActiveIndex++; 
-      renderEditedPage(activePages[currentActiveIndex]); 
+    if (currentActiveIndex < activePages.length - 1) {
+      currentActiveIndex++;
+      renderRawPage(activePages[currentActiveIndex]);
     }
   }
 
-  function switchMainTab(tab) {
-    currentMainTab = tab;
-    document.getElementById('tabWm').classList.toggle('active', tab === 'watermark');
-    document.getElementById('tabSkew').classList.toggle('active', tab === 'skew');
-    document.getElementById('tabPg').classList.toggle('active', tab === 'pageDelete');
-    document.getElementById('tabMask').classList.toggle('active', tab === 'masking');
-    document.getElementById('tabText').classList.toggle('active', tab === 'textEdit');
-    document.getElementById('tabPass').classList.toggle('active', tab === 'password');
-
-    document.getElementById('sectionWatermark').style.display = tab === 'watermark' ? 'flex' : 'none';
-    document.getElementById('sectionSkew').style.display = tab === 'skew' ? 'flex' : 'none';
-    document.getElementById('sectionPageDelete').style.display = tab === 'pageDelete' ? 'flex' : 'none';
-    document.getElementById('sectionMasking').style.display = tab === 'masking' ? 'flex' : 'none';
-    document.getElementById('sectionTextEdit').style.display = tab === 'textEdit' ? 'flex' : 'none';
-    document.getElementById('sectionPassword').style.display = tab === 'password' ? 'flex' : 'none';
-  }
-
-  function switchSubTab(sub) {
-    currentSubTab = sub;
-    document.getElementById('subText').classList.toggle('active', sub === 'text');
-    document.getElementById('subImg').classList.toggle('active', sub === 'image');
-    renderCandidates();
-  }
-
-  function escapeHtml(s) {
-    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
+  function zoomIn() { renderZoomScale += 0.25; renderRawPage(activePages[currentActiveIndex]); }
+  function zoomOut() { if (renderZoomScale > 0.5) { renderZoomScale -= 0.25; renderRawPage(activePages[currentActiveIndex]); } }
+  function zoomReset() { renderZoomScale = 1.25; renderRawPage(activePages[currentActiveIndex]); }
 </script>
 </body>
 </html>

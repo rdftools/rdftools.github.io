@@ -181,9 +181,10 @@
       font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
 
+    /* 확대 시 왼쪽 스크롤 잘림 문제 해결 */
     .preview-container {
       border: 1px solid var(--border); background: var(--house-green); border-radius: 8px;
-      min-height: 400px; overflow: auto; display: flex; justify-content: center; align-items: center;
+      min-height: 400px; overflow: auto; display: flex; justify-content: flex-start; align-items: flex-start;
       padding: 20px; position: relative;
     }
     .canvas-wrapper {
@@ -200,19 +201,21 @@
       position: absolute; border: 1px solid var(--house-green); background: #ffffff !important;
       box-sizing: border-box; cursor: move; z-index: 5;
     }
+    /* 텍스트 상자 선택 및 이동성 강화 */
     .text-box-element {
       position: absolute; border: 2px dashed var(--primary); background: #ffffff;
       box-sizing: border-box; cursor: move; display: flex; align-items: center; justify-content: flex-start;
-      padding: 4px 8px; overflow: hidden; white-space: nowrap; z-index: 6; font-family: sans-serif;
+      padding: 4px 8px; overflow: hidden; white-space: nowrap; z-index: 20; font-family: sans-serif;
+      pointer-events: auto;
     }
     .text-box-element.selected { border: 2px solid var(--primary); box-shadow: 0 0 8px rgba(0, 112, 66, 0.4); }
 
-    .img-box-element { position: absolute; border: 2px dashed var(--accent-green); box-sizing: border-box; cursor: move; z-index: 6; }
+    .img-box-element { position: absolute; border: 2px dashed var(--accent-green); box-sizing: border-box; cursor: move; z-index: 20; pointer-events: auto; }
     .img-box-element img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 
     .link-box-element {
       position: absolute; border: 2px dashed var(--accent-green); background: transparent !important;
-      box-sizing: border-box; cursor: move; display: flex; align-items: flex-start; justify-content: flex-start; z-index: 6;
+      box-sizing: border-box; cursor: move; display: flex; align-items: flex-start; justify-content: flex-start; z-index: 20; pointer-events: auto;
     }
     .link-box-element.selected { border: 2px solid var(--primary); box-shadow: 0 0 8px rgba(0, 112, 66, 0.6); }
     .link-tag-badge {
@@ -222,7 +225,7 @@
 
     .mask-handle {
       position: absolute; width: 8px; height: 8px; background: var(--primary);
-      border: 1px solid #ffffff; border-radius: 50%; z-index: 10;
+      border: 1px solid #ffffff; border-radius: 50%; z-index: 30;
     }
     .handle-nw { top: -5px; left: -5px; cursor: nwse-resize; }
     .handle-ne { top: -5px; right: -5px; cursor: nesw-resize; }
@@ -232,7 +235,7 @@
     .mask-close-btn {
       position: absolute; top: -8px; right: -8px; width: 18px; height: 18px;
       background: var(--house-green); color: white; border-radius: 50%; font-size: 11px;
-      display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; z-index: 15;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; z-index: 35;
     }
 
     .text-edit-toolbar {
@@ -461,7 +464,7 @@
       </div>
       <div class="toolbar-group" id="linkUrlGroup" style="display:none;">
         <label>URL 주소:</label>
-        <input type="text" id="activeLinkTargetUrl" class="input-field" style="width:240px; padding:6px;" placeholder="https://example.com" oninput="updateActiveLinkBox()">
+        <input type="text" id="activeLinkTargetUrl" class="input-field" style="width:240px; placeholder="https://example.com" oninput="updateActiveLinkBox()">
       </div>
     </div>
   </div>
@@ -525,6 +528,13 @@
   let linkBoxes = new Map();
   let selectedTextBoxId = null;
   let selectedLinkBoxId = null;
+
+  let isCreating = false;
+  let createStartX = 0, createStartY = 0;
+  let tempBoxElem = null;
+  let isMoving = false, isResizing = false;
+  let activeBoxId = null, activeBoxType = 'mask', resizeHandle = null;
+  let dragOffsetX = 0, dragOffsetY = 0;
 
   let undoStack = [];
 
@@ -709,7 +719,6 @@
     showToast('PDF 문서를 분석 중입니다...');
 
     try {
-      // PDF.js가 버퍼 소유권을 넘겨받아 ArrayBuffer가 detached 되는 현상을 예방
       pdfJsDoc = await pdfjsLib.getDocument({ data: rawBuffer.slice(0) }).promise;
       totalPages = pdfJsDoc.numPages;
       activePages = Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -1090,7 +1099,6 @@
     const textMap = new Map();
     const imageMap = new Map();
 
-    // 워터마크 분석용 별도 PDF 인스턴스 생성 (Main PDF 객체 훼손 방지)
     const analysisDoc = await pdfjsLib.getDocument({ data: rawBuffer.slice(0) }).promise;
 
     for (let p = 1; p <= totalPages; p++) {
@@ -1380,10 +1388,22 @@
     };
     elem.appendChild(closeBtn);
 
-    elem.onclick = (e) => {
+    // 드래그 및 마우스 클릭 이벤트 바인딩
+    elem.onmousedown = (e) => {
+      if (e.target.classList.contains('mask-handle') || e.target.classList.contains('mask-close-btn')) return;
       e.stopPropagation();
+      saveUndoState();
+      isMoving = true;
+      activeBoxId = box.id;
+      activeBoxType = type;
+
       if (type === 'text') selectTextBox(box.id);
       if (type === 'link') selectLinkBox(box.id);
+
+      const overlayRect = overlay.getBoundingClientRect();
+      const rect = elem.getBoundingClientRect();
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
     };
 
     overlay.appendChild(elem);
@@ -1491,9 +1511,8 @@
     if (!overlay) return;
 
     overlay.onmousedown = (e) => {
-      saveUndoState();
-      
       if (e.target.dataset.handle) {
+        saveUndoState();
         isResizing = true;
         activeBoxId = e.target.dataset.boxId;
         activeBoxType = e.target.dataset.boxType;
@@ -1501,24 +1520,8 @@
         return;
       }
 
-      if (e.target.classList.contains('mask-box-element') ||
-          e.target.classList.contains('text-box-element') ||
-          e.target.classList.contains('img-box-element') ||
-          e.target.classList.contains('link-box-element')) {
-        isMoving = true;
-        activeBoxId = e.target.id;
-        if (e.target.classList.contains('mask-box-element')) activeBoxType = 'mask';
-        else if (e.target.classList.contains('text-box-element')) activeBoxType = 'text';
-        else if (e.target.classList.contains('img-box-element')) activeBoxType = 'image';
-        else if (e.target.classList.contains('link-box-element')) activeBoxType = 'link';
-
-        const rect = e.target.getBoundingClientRect();
-        dragOffsetX = e.clientX - rect.left;
-        dragOffsetY = e.clientY - rect.top;
-        return;
-      }
-
-      if (currentMainTab === 'masking') {
+      if (currentMainTab === 'masking' && e.target === overlay) {
+        saveUndoState();
         isCreating = true;
         const overlayRect = overlay.getBoundingClientRect();
         createStartX = e.clientX - overlayRect.left;
@@ -1576,7 +1579,7 @@
       }
     };
 
-    overlay.onmouseup = () => {
+    window.onmouseup = () => {
       if (isCreating && tempBoxElem) {
         const pageNum = activePages[currentActiveIndex];
         const w = parseFloat(tempBoxElem.style.width) / renderZoomScale;

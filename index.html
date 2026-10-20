@@ -186,7 +186,6 @@
       font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
 
-    /* 확대 시 좌측 이동 잘림 방지 CSS 수정 */
     .preview-container {
       border: 1px solid var(--border); background: var(--house-green); border-radius: 8px;
       min-height: 400px; overflow: auto; display: block;
@@ -231,19 +230,20 @@
     .img-box-element { position: absolute; border: 2px dashed var(--accent-green); box-sizing: border-box; cursor: move; z-index: 25; pointer-events: auto; }
     .img-box-element img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 
+    /* 이동 영역 박스 레이어 및 클릭 우선순위 강화 */
     .link-box-element {
-      position: absolute; border: 2px dashed var(--primary); background: rgba(0, 112, 66, 0.15) !important;
-      box-sizing: border-box; cursor: move; display: flex; align-items: flex-start; justify-content: flex-start; z-index: 30; pointer-events: auto;
+      position: absolute; border: 2px dashed #007042; background: rgba(0, 112, 66, 0.25) !important;
+      box-sizing: border-box; cursor: move; display: flex; align-items: flex-start; justify-content: flex-start; z-index: 50; pointer-events: auto;
     }
-    .link-box-element.selected { border: 2px solid #005231; background: rgba(0, 112, 66, 0.25) !important; box-shadow: 0 0 8px rgba(0, 112, 66, 0.6); }
+    .link-box-element.selected { border: 2px solid #004d2d; background: rgba(0, 112, 66, 0.4) !important; box-shadow: 0 0 10px rgba(0, 112, 66, 0.8); }
     .link-tag-badge {
-      background: var(--primary); color: #ffffff; padding: 2px 6px; border-radius: 3px;
-      font-size: 0.75rem; font-weight: 700; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.3); margin: 2px;
+      background: var(--primary); color: #ffffff; padding: 3px 8px; border-radius: 4px;
+      font-size: 0.85rem; font-weight: 700; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.3); margin: 3px;
     }
 
     .mask-handle {
-      position: absolute; width: 8px; height: 8px; background: var(--primary);
-      border: 1px solid #ffffff; border-radius: 50%; z-index: 40;
+      position: absolute; width: 10px; height: 10px; background: var(--primary);
+      border: 1px solid #ffffff; border-radius: 50%; z-index: 60;
     }
     .handle-nw { top: -5px; left: -5px; cursor: nwse-resize; }
     .handle-ne { top: -5px; right: -5px; cursor: nesw-resize; }
@@ -251,9 +251,9 @@
     .handle-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
 
     .mask-close-btn {
-      position: absolute; top: -8px; right: -8px; width: 18px; height: 18px;
+      position: absolute; top: -8px; right: -8px; width: 20px; height: 20px;
       background: var(--house-green); color: white; border-radius: 50%; font-size: 11px;
-      display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; z-index: 45;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; z-index: 65;
     }
 
     .text-edit-toolbar {
@@ -502,7 +502,6 @@
         <button onclick="zoomOut()" class="file-btn">➖</button>
         <span id="zoomScaleDisplay" style="font-size:0.85rem; font-weight:600;">100%</span>
         <button onclick="zoomIn()" class="file-btn">➕</button>
-        <!-- '원래크기' 텍스트로 수정 완료 -->
         <button onclick="zoomReset()" class="file-btn">원래크기</button>
         <button onclick="prevPage()" class="file-btn">◀ 이전</button>
         <span id="pageIndicator" style="font-size:0.85rem; font-weight:600;">0 / 0</span>
@@ -561,8 +560,15 @@
 
   let undoStack = [];
 
+  function getCurrentPageNum() {
+    if (activePages && activePages.length > currentActiveIndex) {
+      return activePages[currentActiveIndex];
+    }
+    return 1;
+  }
+
   function saveUndoState() {
-    const pageNum = activePages[currentActiveIndex];
+    const pageNum = getCurrentPageNum();
     if (!pageNum) return;
     undoStack.push({
       pageNum: pageNum,
@@ -642,7 +648,7 @@
     }
 
     if (activePages.length > 0) {
-      syncOverlayBoxes(activePages[currentActiveIndex]);
+      syncOverlayBoxes(getCurrentPageNum());
     }
   }
 
@@ -874,7 +880,7 @@
       const dataUrl = evt.target.result;
       const tempImg = new Image();
       tempImg.onload = function() {
-        const pageNum = activePages[currentActiveIndex];
+        const pageNum = getCurrentPageNum();
         const canvas = document.getElementById('pdfCanvas');
         
         const canvasW = (canvas ? canvas.width : 600) / renderZoomScale;
@@ -931,7 +937,7 @@
 
       await analyzeWatermarks();
 
-      await renderRawPage(activePages[currentActiveIndex]);
+      await renderRawPage(getCurrentPageNum());
       initOverlayEvents();
 
       showToast(`문서 분석 완료! (총 ${totalPages}개 페이지)`);
@@ -982,7 +988,7 @@
 
       card.onclick = () => {
         currentActiveIndex = index;
-        renderRawPage(activePages[currentActiveIndex]);
+        renderRawPage(getCurrentPageNum());
       };
 
       card.ondragstart = (e) => {
@@ -1009,7 +1015,7 @@
 
           currentActiveIndex = toIndex;
           renderPageThumbnails();
-          renderRawPage(activePages[currentActiveIndex]);
+          renderRawPage(getCurrentPageNum());
           showToast(`페이지 순서가 변경되었습니다.`);
         }
       };
@@ -1028,13 +1034,13 @@
     }
 
     renderPageThumbnails();
-    renderRawPage(activePages[currentActiveIndex]);
+    renderRawPage(getCurrentPageNum());
     showToast(`p.${removedPageNum} 페이지가 삭제되었습니다.`);
   }
 
   function applyMaskToAllPages() {
     if (activePages.length === 0) return;
-    const currentPageNum = activePages[currentActiveIndex];
+    const currentPageNum = getCurrentPageNum();
     const currentMasks = manualMasks.get(currentPageNum) || [];
 
     if (currentMasks.length === 0) {
@@ -1065,7 +1071,7 @@
 
   function rotateCurrentPage() {
     if (activePages.length === 0) return;
-    const pageNum = activePages[currentActiveIndex];
+    const pageNum = getCurrentPageNum();
     const currentRot = pageRotations.get(pageNum) || 0;
     const newRot = (currentRot + 90) % 360;
     pageRotations.set(pageNum, newRot);
@@ -1524,7 +1530,7 @@
     }
 
     if (activePages.length > 0) {
-      syncOverlayBoxes(activePages[currentActiveIndex]);
+      syncOverlayBoxes(getCurrentPageNum());
     }
     
     alert('편집이 완료 되었습니다.');
@@ -1616,7 +1622,7 @@
       return;
     }
     saveUndoState();
-    const pageNum = activePages[currentActiveIndex];
+    const pageNum = getCurrentPageNum();
     const newBox = { 
       id: 'text_' + Date.now(), 
       x: 50, y: 50, w: 200, h: 40, 
@@ -1631,7 +1637,7 @@
 
   function selectTextBox(id) {
     selectedTextBoxId = id;
-    const pageNum = activePages[currentActiveIndex];
+    const pageNum = getCurrentPageNum();
     const box = (textBoxes.get(pageNum) || []).find(b => b.id === id);
 
     if (box) {
@@ -1645,7 +1651,7 @@
 
   function updateActiveTextBox() {
     if (!selectedTextBoxId) return;
-    const pageNum = activePages[currentActiveIndex];
+    const pageNum = getCurrentPageNum();
     const box = (textBoxes.get(pageNum) || []).find(b => b.id === selectedTextBoxId);
 
     if (box) {
@@ -1657,17 +1663,19 @@
     }
   }
 
+  /* --- 이동 영역 설정 안전 생성 함수 --- */
   function addLinkBoxOverCurrentPage() {
     if (!pdfJsDoc || activePages.length === 0) {
       alert('PDF 파일을 먼저 선택해 주세요.');
       return;
     }
     saveUndoState();
-    const pageNum = activePages[currentActiveIndex];
     
+    const pageNum = getCurrentPageNum();
+
     const canvas = document.getElementById('pdfCanvas');
-    const canvasW = (canvas ? canvas.width : 600) / renderZoomScale;
-    const canvasH = (canvas ? canvas.height : 800) / renderZoomScale;
+    const canvasW = (canvas && canvas.width > 0 ? canvas.width : 600) / renderZoomScale;
+    const canvasH = (canvas && canvas.height > 0 ? canvas.height : 800) / renderZoomScale;
 
     const initialType = document.getElementById('activeLinkType')?.value || 'url';
     const initialUrl = document.getElementById('activeLinkTargetUrl')?.value || 'https://example.com';
@@ -1689,12 +1697,12 @@
     
     syncOverlayBoxes(pageNum);
     selectLinkBox(newBox.id);
-    showToast('이동 영역이 미리보기 화면 중앙에 추가되었습니다!');
+    showToast('이동 영역 상자가 화면 중앙에 정상적으로 생성되었습니다!');
   }
 
   function selectLinkBox(id) {
     selectedLinkBoxId = id;
-    const pageNum = activePages[currentActiveIndex];
+    const pageNum = getCurrentPageNum();
     const box = (linkBoxes.get(pageNum) || []).find(b => b.id === id);
 
     if (box) {
@@ -1717,7 +1725,7 @@
 
   function updateActiveLinkBox() {
     if (!selectedLinkBoxId) return;
-    const pageNum = activePages[currentActiveIndex];
+    const pageNum = getCurrentPageNum();
     const box = (linkBoxes.get(pageNum) || []).find(b => b.id === selectedLinkBoxId);
 
     if (box) {
@@ -1729,7 +1737,7 @@
   }
 
   function removeBox(id, type) {
-    const pageNum = activePages[currentActiveIndex];
+    const pageNum = getCurrentPageNum();
     if (type === 'mask') manualMasks.set(pageNum, (manualMasks.get(pageNum) || []).filter(b => b.id !== id));
     else if (type === 'text') textBoxes.set(pageNum, (textBoxes.get(pageNum) || []).filter(b => b.id !== id));
     else if (type === 'image') imageBoxes.set(pageNum, (imageBoxes.get(pageNum) || []).filter(b => b.id !== id));
@@ -1781,7 +1789,7 @@
 
       if (!activeBoxId) return;
 
-      const pageNum = activePages[currentActiveIndex];
+      const pageNum = getCurrentPageNum();
       let targetMap = manualMasks;
       if (activeBoxType === 'text') targetMap = textBoxes;
       if (activeBoxType === 'image') targetMap = imageBoxes;
@@ -1815,7 +1823,7 @@
 
     window.onmouseup = () => {
       if (isCreating && tempBoxElem) {
-        const pageNum = activePages[currentActiveIndex];
+        const pageNum = getCurrentPageNum();
         const w = parseFloat(tempBoxElem.style.width) / renderZoomScale;
         const h = parseFloat(tempBoxElem.style.height) / renderZoomScale;
         const x = parseFloat(tempBoxElem.style.left) / renderZoomScale;
@@ -1836,20 +1844,20 @@
   function prevPage() {
     if (currentActiveIndex > 0) {
       currentActiveIndex--;
-      renderRawPage(activePages[currentActiveIndex]);
+      renderRawPage(getCurrentPageNum());
     }
   }
 
   function nextPage() {
     if (currentActiveIndex < activePages.length - 1) {
       currentActiveIndex++;
-      renderRawPage(activePages[currentActiveIndex]);
+      renderRawPage(getCurrentPageNum());
     }
   }
 
-  function zoomIn() { renderZoomScale += 0.25; renderRawPage(activePages[currentActiveIndex]); }
-  function zoomOut() { if (renderZoomScale > 0.5) { renderZoomScale -= 0.25; renderRawPage(activePages[currentActiveIndex]); } }
-  function zoomReset() { renderZoomScale = 1.25; renderRawPage(activePages[currentActiveIndex]); }
+  function zoomIn() { renderZoomScale += 0.25; renderRawPage(getCurrentPageNum()); }
+  function zoomOut() { if (renderZoomScale > 0.5) { renderZoomScale -= 0.25; renderRawPage(getCurrentPageNum()); } }
+  function zoomReset() { renderZoomScale = 1.25; renderRawPage(getCurrentPageNum()); }
 </script>
 </body>
 </html>

@@ -432,7 +432,7 @@
     <div class="text-edit-toolbar">
       <button class="file-btn" onclick="triggerImgInput()" style="background:#10b981; color:white;">🖼️ 이미지 불러오기</button>
       <input type="file" id="imageFileInput" accept="image/*" style="display:none;" onchange="onImageSelected(event)">
-      <span style="font-size:0.8rem; color:#6b7280; margin-left:10px;">💡 이미지 드래그 시 <b>원본 비율이 자동으로 유지</b>됩니다.</span>
+      <span style="font-size:0.8rem; color:#6b7280; margin-left:10px;">💡 이미지 모서리를 드래그하면 <b>원본 비율이 유지</b>된 채 조절됩니다.</span>
     </div>
   </div>
 
@@ -613,6 +613,57 @@
       startAnalysis();
     };
     reader.readAsArrayBuffer(file);
+  }
+
+  /* 외부 이미지 파일 선택 시 현재 미리보기 영역 중앙에 자동 추가하는 함수 */
+  function onImageSelected(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!pdfJsDoc || activePages.length === 0) {
+      alert('이미지를 첨부할 PDF 문서를 상단에서 먼저 선택해 주세요.');
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const dataUrl = evt.target.result;
+      const tempImg = new Image();
+      tempImg.onload = function() {
+        const pageNum = activePages[currentActiveIndex];
+        const canvas = document.getElementById('pdfCanvas');
+        
+        // 미리보기 Canvas 크기 기준으로 중앙 위치 계산
+        const canvasW = (canvas ? canvas.width : 600) / renderZoomScale;
+        const canvasH = (canvas ? canvas.height : 800) / renderZoomScale;
+
+        const aspectRatio = tempImg.height / tempImg.width;
+        let initialW = Math.min(250, canvasW * 0.5);
+        let initialH = initialW * aspectRatio;
+
+        const posX = Math.max(20, (canvasW - initialW) / 2);
+        const posY = Math.max(20, (canvasH - initialH) / 2);
+
+        const newBox = {
+          id: 'img_' + Date.now(),
+          x: posX,
+          y: posY,
+          w: initialW,
+          h: initialH,
+          dataUrl: dataUrl,
+          aspectRatio: aspectRatio
+        };
+
+        if (!imageBoxes.has(pageNum)) imageBoxes.set(pageNum, []);
+        imageBoxes.get(pageNum).push(newBox);
+        syncOverlayBoxes(pageNum);
+        showToast('이미지가 미리보기 화면에 추가되었습니다!');
+      };
+      tempImg.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   }
 
   async function startAnalysis() {
@@ -800,7 +851,6 @@
     }
   }
 
-  /* 고해상도 선명도(scale: 3.0, quality: 0.98)가 적용된 PDF 저장 함수 */
   async function processAndDownload() {
     if (!pdfJsDoc) {
       alert('PDF 파일을 먼저 로드해주세요.');
@@ -828,7 +878,6 @@
         const ctx = renderCanvas.getContext('2d');
         const addedPdfPages = [];
 
-        // 선명도 강화를 위한 고해상도 배율 (3.0 = 약 300 DPI급 선명도)
         const scale = 3.0;
 
         for (let idx = 0; idx < pagesToExport.length; idx++) {
@@ -861,7 +910,6 @@
             });
           }
 
-          // 압축 품질 0.98로 상향하여 글자 가독성 및 이미지 선명도 극대화
           const imgDataUrl = renderCanvas.toDataURL('image/jpeg', 0.98);
           const imgBytes = await fetch(imgDataUrl).then(res => res.arrayBuffer());
           const embeddedJpg = await newPdfDoc.embedJpg(imgBytes);
@@ -1062,7 +1110,7 @@
 
         const renderCanvas = document.createElement('canvas');
         const ctx = renderCanvas.getContext('2d');
-        const scale = 3.0; // 병합 시에도 고해상도 배율 적용
+        const scale = 3.0;
 
         for (let i = 0; i < mergeFiles.length; i++) {
           const fileObj = mergeFiles[i].file;

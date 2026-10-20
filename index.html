@@ -475,7 +475,6 @@
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <h3 style="font-size:0.95rem;">실시간 미리보기</h3>
       <div style="display:flex; align-items:center; gap:8px;">
-        <!-- 실행 취소 버튼 색상을 90도 회전 버튼과 동일하게 var(--primary)로 수정 -->
         <button onclick="undoLastAction()" class="file-btn" style="background:var(--primary); color:white;" title="실행 취소 (Ctrl+Z)">↩ 실행 취소</button>
         <button onclick="rotateCurrentPage()" class="file-btn" style="background:var(--primary); color:white;">↻ 90° 회전</button>
         <button onclick="zoomOut()" class="file-btn">➖</button>
@@ -710,7 +709,7 @@
     showToast('PDF 문서를 분석 중입니다...');
 
     try {
-      // ArrayBuffer Detached 문제 방지를 위해 slice(0) 복사본 사용
+      // PDF.js가 버퍼 소유권을 넘겨받아 ArrayBuffer가 detached 되는 현상을 예방
       pdfJsDoc = await pdfjsLib.getDocument({ data: rawBuffer.slice(0) }).promise;
       totalPages = pdfJsDoc.numPages;
       activePages = Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -1061,6 +1060,263 @@
         alert('PDF 저장 중 오류가 발생했습니다: ' + err.message);
       }
     }, 50);
+  }
+
+  function getImgObjectFromPage(page, imgName) {
+    return new Promise(res => {
+      let resolved = false;
+      const checkObj = (objContainer) => {
+        if (objContainer && objContainer.has && objContainer.has(imgName)) {
+          objContainer.get(imgName, obj => {
+            if (!resolved) { resolved = true; res(obj); }
+          });
+          return true;
+        }
+        return false;
+      };
+
+      if (!checkObj(page.objs)) {
+        if (!checkObj(page.commonObjs)) {
+          setTimeout(() => { if (!resolved) res(null); }, 200);
+        }
+      }
+    });
+  }
+
+  async function analyzeWatermarks() {
+    textCandidates = [];
+    imageCandidates = [];
+
+    const textMap = new Map();
+    const imageMap = new Map();
+
+    // 워터마크 분석용 별도 PDF 인스턴스 생성 (Main PDF 객체 훼손 방지)
+    const analysisDoc = await pdfjsLib.getDocument({ data: rawBuffer.slice(0) }).promise;
+
+    for (let p = 1; p <= totalPages; p++) {
+      const pct = Math.round((p / totalPages) * 100);
+      showToast(`PDF 분석 중... [ ${p} / ${totalPages} 페이지 ] (${pct}%)`);
+      await new Promise(r => setTimeout(r, 0));
+
+      const page = await analysisDoc.getPage(p);
+      const viewport = page.getViewport({ scale: 1.0 });
+
+      const textContent = await page.getTextContent();
+
+      const linesMap = new Map();
+      for (const item of textContent.items) {
+        const str = item.str.trim();
+        if (!str) continue;
+
+        const pdfX = item.transform[4];
+        const pdfY = item.transform[5];
+        const fontH = item.height || Math.abs(item.transform[3]) || 12;
+
+        const [vx, vy] = viewport.convertToViewportPoint(pdfX, pdfY);
+        
+        const topY = vy - (fontH * 0.8) - 2; 
+        const leftX = vx - 2;
+        const width = (item.width || 60) + 4;
+        const height = fontH + 4;
+
+        const roundY = Math.round(topY / 4) * 4;
+
+        if (!linesMap.has(roundY)) {
+          linesMap.set(roundY, { 
+            textParts: [str], 
+            x: Math.max(0, leftX), 
+            y: topY, 
+            w: width, 
+            h: height 
+          });
+        } else {
+          const line = linesMap.get(roundY);
+          line.textParts.push(str);
+          line.w = Math.max(line.w, (leftX + width) - line.x);
+          line.h = Math.max(line.h, height);
+        }
+      }
+
+      for (const line of linesMap.values()) {
+        const fullText = line.textParts.join(' ').replace(/\s+/g, ' ').trim();
+        if (fullText.length < 2) continue;
+
+        const bbox = { page: p, pdfX: line.x, pdfY: line.y, pdfW: line.w, pdfH: line.h };
+
+        if (!textMap.has(fullText)) {
+          textMap.set(fullText, { text: fullText, bboxes: [bbox], pages: new Set([p]) });
+        } else {
+          const entry = textMap.get(fullText);
+          entry.bboxes.push(bbox);
+          entry.pages.add(p);
+        }
+      }
+
+      try {
+        const opList = await page.getOperatorList();
+        const validOps = pdfjsLib.OPS;
+
+        let matrixStack = [[1, 0, 0, 1, 0, 0]];
+        let currentCTM = [1, 0, 0, 1, 0, 0];
+
+        for (let i = 0; i < opList.fnArray.length; i++) {
+          const fn = opList.fnArray[i];
+          const args = opList.argsArray[i];
+
+          if (fn === validOps.save) {
+            matrixStack.push([...currentCTM]);
+          } else if (fn === validOps.restore) {
+            if (matrixStack.length > 1) currentCTM = matrixStack.pop();
+          } else if (fn === validOps.transform) {
+            currentCTM = pdfjsLib.Util.transform(currentCTM, args);
+          } else if (fn === validOps.paintImageXObject || fn === validOps.paintInlineImageXObject || fn === validOps.paintFormXObject) {
+            const imgName = args[0];
+            const imgObj = await getImgObjectFromPage(page, imgName);
+
+            if (imgObj && imgObj.width && imgObj.height) {
+              const key = `${imgObj.width}x${imgObj.height}`;
+              const pdfX = currentCTM[4];
+              const rawPdfY = currentCTM[5];
+              const pdfW = Math.abs(currentCTM[0]);
+              const pdfH = Math.abs(currentCTM[3]);
+
+              const [vx, vy] = viewport.convertToViewportPoint(pdfX, rawPdfY);
+              const topY = vy - pdfH;
+              const bbox = { page: p, pdfX: vx, pdfY: topY, pdfW: pdfW, pdfH: pdfH };
+
+              if (!imageMap.has(key)) {
+                const cvs = document.createElement('canvas');
+                cvs.width = imgObj.width;
+                cvs.height = imgObj.height;
+                const ctx = cvs.getContext('2d');
+
+                if (imgObj.data) {
+                  const imgData = ctx.createImageData(imgObj.width, imgObj.height);
+                  if (imgObj.data.length === imgObj.width * imgObj.height * 4) {
+                    imgData.data.set(imgObj.data);
+                  } else {
+                    for (let j = 0, k = 0; j < imgObj.data.length; j += 3, k += 4) {
+                      imgData.data[k] = imgObj.data[j];
+                      imgData.data[k+1] = imgObj.data[j+1];
+                      imgData.data[k+2] = imgObj.data[j+2];
+                      imgData.data[k+3] = 255;
+                    }
+                  }
+                  ctx.putImageData(imgData, 0, 0);
+                }
+
+                imageMap.set(key, { key, previewUrl: cvs.toDataURL(), bboxes: [bbox], pages: new Set([p]) });
+              } else {
+                const entry = imageMap.get(key);
+                entry.bboxes.push(bbox);
+                entry.pages.add(p);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('이미지 추출 경고:', e);
+      }
+    }
+
+    textCandidates = Array.from(textMap.values()).filter(item => item.pages.size >= 2).sort((a, b) => b.pages.size - a.pages.size);
+    imageCandidates = Array.from(imageMap.values()).filter(item => item.pages.size >= 2).sort((a, b) => b.pages.size - a.pages.size);
+
+    document.getElementById('textCandBadge').innerText = `(${textCandidates.length})`;
+    document.getElementById('imgCandBadge').innerText = `(${imageCandidates.length})`;
+
+    renderCandidateGrid();
+  }
+
+  function renderCandidateGrid() {
+    const grid = document.getElementById('candidateGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (currentSubTab === 'text') {
+      if (textCandidates.length === 0) {
+        grid.innerHTML = `<div style="text-align:center; color:#9ca3af; padding:30px;">감지된 텍스트 형태의 워터마크가 없습니다.</div>`;
+        return;
+      }
+      textCandidates.forEach((cand, idx) => {
+        const card = document.createElement('div');
+        card.className = 'candidate-card';
+        card.innerHTML = `
+          <div class="candidate-info">
+            <input type="checkbox" id="wm_text_check_${idx}">
+            <span class="candidate-text">${cand.text}</span>
+          </div>
+          <span class="candidate-count">${cand.pages.size}개 페이지 감지</span>
+        `;
+        grid.appendChild(card);
+      });
+    } else {
+      if (imageCandidates.length === 0) {
+        grid.innerHTML = `<div style="text-align:center; color:#9ca3af; padding:30px;">감지된 반복 이미지 형태의 워터마크가 없습니다.</div>`;
+        return;
+      }
+      imageCandidates.forEach((cand, idx) => {
+        const card = document.createElement('div');
+        card.className = 'candidate-card';
+        card.innerHTML = `
+          <div class="candidate-info">
+            <input type="checkbox" id="wm_img_check_${idx}">
+            <img class="candidate-img-preview" src="${cand.previewUrl}">
+            <span class="candidate-text">반복 이미지 패치 (${cand.key})</span>
+          </div>
+          <span class="candidate-count">${cand.pages.size}개 페이지 감지</span>
+        `;
+        grid.appendChild(card);
+      });
+    }
+  }
+
+  async function applyCheckedWatermarks() {
+    let appliedCount = 0;
+
+    if (currentSubTab === 'text') {
+      textCandidates.forEach((cand, idx) => {
+        const chk = document.getElementById(`wm_text_check_${idx}`);
+        if (chk && chk.checked) {
+          cand.bboxes.forEach(bbox => {
+            const pageNum = bbox.page;
+            if (!manualMasks.has(pageNum)) manualMasks.set(pageNum, []);
+            manualMasks.get(pageNum).push({
+              id: 'wm_mask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+              x: bbox.pdfX,
+              y: bbox.pdfY,
+              w: bbox.pdfW,
+              h: bbox.pdfH
+            });
+            appliedCount++;
+          });
+        }
+      });
+    } else {
+      imageCandidates.forEach((cand, idx) => {
+        const chk = document.getElementById(`wm_img_check_${idx}`);
+        if (chk && chk.checked) {
+          cand.bboxes.forEach(bbox => {
+            const pageNum = bbox.page;
+            if (!manualMasks.has(pageNum)) manualMasks.set(pageNum, []);
+            manualMasks.get(pageNum).push({
+              id: 'wm_mask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+              x: bbox.pdfX,
+              y: bbox.pdfY,
+              w: bbox.pdfW,
+              h: bbox.pdfH
+            });
+            appliedCount++;
+          });
+        }
+      });
+    }
+
+    if (activePages.length > 0) {
+      syncOverlayBoxes(activePages[currentActiveIndex]);
+    }
+    
+    alert('편집이 완료 되었습니다.');
   }
 
   function syncOverlayBoxes(pageNum) {

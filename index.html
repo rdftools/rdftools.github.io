@@ -475,8 +475,8 @@
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <h3 style="font-size:0.95rem;">실시간 미리보기</h3>
       <div style="display:flex; align-items:center; gap:8px;">
-        <!-- 실행 취소 버튼 추가 -->
-        <button onclick="undoLastAction()" class="file-btn" style="background:var(--house-green); color:white;" title="실행 취소 (Ctrl+Z)">↩ 실행 취소</button>
+        <!-- 실행 취소 버튼 색상을 90도 회전 버튼과 동일하게 var(--primary)로 수정 -->
+        <button onclick="undoLastAction()" class="file-btn" style="background:var(--primary); color:white;" title="실행 취소 (Ctrl+Z)">↩ 실행 취소</button>
         <button onclick="rotateCurrentPage()" class="file-btn" style="background:var(--primary); color:white;">↻ 90° 회전</button>
         <button onclick="zoomOut()" class="file-btn">➖</button>
         <span id="zoomScaleDisplay" style="font-size:0.85rem; font-weight:600;">100%</span>
@@ -527,7 +527,6 @@
   let selectedTextBoxId = null;
   let selectedLinkBoxId = null;
 
-  // 히스토리(Undo) 저장을 위한 스택
   let undoStack = [];
 
   function saveUndoState() {
@@ -558,7 +557,6 @@
     showToast('마지막 작업을 취소했습니다.');
   }
 
-  // Ctrl + Z 단축키 이벤트
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
       if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
@@ -712,6 +710,7 @@
     showToast('PDF 문서를 분석 중입니다...');
 
     try {
+      // ArrayBuffer Detached 문제 방지를 위해 slice(0) 복사본 사용
       pdfJsDoc = await pdfjsLib.getDocument({ data: rawBuffer.slice(0) }).promise;
       totalPages = pdfJsDoc.numPages;
       activePages = Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -937,13 +936,11 @@
 
           await page.render({ canvasContext: ctx, viewport: viewport }).promise;
 
-          // 1. 영역 마스킹 렌더링
           (manualMasks.get(pageNum) || []).forEach(box => {
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(box.x * scale, box.y * scale, box.w * scale, box.h * scale);
           });
 
-          // 2. 텍스트 상자 렌더링 (수정된 렌더링 로직)
           const txts = textBoxes.get(pageNum) || [];
           for (const txtBox of txts) {
             if (!txtBox.text) continue;
@@ -952,13 +949,11 @@
             const bw = txtBox.w * scale;
             const bh = txtBox.h * scale;
 
-            // 배경색 칠하기
             if (txtBox.bgColor) {
               ctx.fillStyle = txtBox.bgColor;
               ctx.fillRect(bx, by, bw, bh);
             }
 
-            // 텍스트 그리기
             const fontPx = (txtBox.fontSize || 16) * scale;
             ctx.font = `${fontPx}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
             ctx.fillStyle = txtBox.color || '#000000';
@@ -966,7 +961,6 @@
             ctx.fillText(txtBox.text, bx + (4 * scale), by + (4 * scale));
           }
 
-          // 3. 이미지 렌더링
           const imgs = imageBoxes.get(pageNum) || [];
           for (const imgBox of imgs) {
             await new Promise((resolve) => {
@@ -994,7 +988,6 @@
           addedPdfPages.push({ pageNum, pdfPage, pdfHeight: viewport.height / scale });
         }
 
-        // 링크 처리
         for (let idx = 0; idx < addedPdfPages.length; idx++) {
           const { pageNum, pdfPage, pdfHeight } = addedPdfPages[idx];
           const links = linkBoxes.get(pageNum) || [];

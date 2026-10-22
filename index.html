@@ -1760,7 +1760,7 @@ function logUserAction(type, detail) {
     }
   }
 
-  async function applyCheckedWatermarks() {
+async function applyCheckedWatermarks() {
     if (!checkAuthOrAlert()) return;
 
     let appliedCount = 0;
@@ -1803,11 +1803,17 @@ function logUserAction(type, detail) {
       });
     }
 
+    // 💡 선택된 워터마크 항목이 0개일 경우 처리 중단 (로그가 생성되지 않음)
+    if (appliedCount === 0) {
+      showToast('선택된 워터마크 항목이 없습니다.');
+      return;
+    }
+
     if (activePages.length > 0) {
       syncOverlayBoxes(getCurrentPageNum());
     }
     
-logUserAction('워터마크 삭제 적용', `선택된 워터마크 마스킹 처리 (${appliedCount}개 영역)`);
+    logUserAction('워터마크 삭제 적용', `선택된 워터마크 마스킹 처리 (${appliedCount}개 영역)`);
     showToast(`선택한 ${appliedCount}개 워터마크 영역이 마스킹 처리되었습니다.`);
   }
 

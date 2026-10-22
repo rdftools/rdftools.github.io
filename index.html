@@ -743,26 +743,7 @@ async function loadAdminLogsFromServer() {
     renderAdminLogTable(fetchedRawLogs);
   }
 
-  function renderAdminLogTable(logs) {
-    const tbody = document.getElementById('adminLogTableBody');
-    if (!logs || logs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#9ca3af;">조건에 일치하는 감사 로그 이력이 없습니다.</td></tr>';
-      return;
-    }
-
-    let html = '';
-    logs.slice().reverse().forEach(log => {
-      html += `
-        <tr>
-          <td>${log.timestamp || ''}</td>
-          <td><b>${log.user || ''}</b></td>
-          <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:600;">${log.type || ''}</span></td>
-          <td>${log.detail || ''}</td>
-        </tr>
-      `;
-    });
-    tbody.innerHTML = html;
-  }
+function renderAdminLogTable(logs) {
 
   function exportLogsCSV() {
     if (!fetchedRawLogs || fetchedRawLogs.length === 0) {

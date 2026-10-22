@@ -730,7 +730,7 @@
     renderAdminLogTable(fetchedRawLogs);
   }
 
-  function renderAdminLogTable(logs) {
+function renderAdminLogTable(logs) {
     const tbody = document.getElementById('adminLogTableBody');
     if (!logs || logs.length === 0) {
       tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#9ca3af;">조건에 일치하는 감사 로그 이력이 없습니다.</td></tr>';
@@ -739,11 +739,9 @@
 
     let html = '';
     logs.slice().reverse().forEach(log => {
-      // 1. 일시를 년-월-일(YYYY-MM-DD)로 단축 정제
-      let formattedDate = log.date || '';
-      if (!formattedDate && log.timestamp) {
-        formattedDate = String(log.timestamp).split('T')[0].split(' ')[0];
-      }
+      // 1. timestamp / date 원본 문자열에서 앞 10자리(YYYY-MM-DD)만 정확히 잘라냄
+      let rawDate = String(log.date || log.timestamp || '');
+      let formattedDate = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
 
       // 2. 계정에서 @impact7.kr 제거 후 아이디만 추출
       let displayUser = log.user || '';
@@ -753,7 +751,7 @@
 
       html += `
         <tr>
-          <td>${formattedDate}</td>
+          <td style="white-space: nowrap;">${formattedDate}</td>
           <td><b>${displayUser}</b></td>
           <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:600;">${log.type || ''}</span></td>
           <td>${log.detail || ''}</td>

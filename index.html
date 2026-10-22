@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF All-in-One Editor Studio</title>
+  <!-- Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <style>
@@ -51,16 +53,76 @@
     }
     .header-text h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 2px; }
     .header-text p { font-size: 0.85rem; opacity: 0.85; }
-    .file-badge {
-      background: rgba(255, 255, 255, 0.2); padding: 6px 14px;
-      border-radius: 20px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;
-      backdrop-filter: blur(4px);
+    
+    .header-auth-badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 6px 14px; border-radius: 20px; font-size: 0.85rem;
+      display: flex; align-items: center; gap: 8px; backdrop-filter: blur(4px);
     }
-    .badge-dot { width: 8px; height: 8px; background: var(--light-green); border-radius: 50%; }
+    .badge-dot { width: 8px; height: 8px; background: #4ade80; border-radius: 50%; }
+
+    .settings-icon-btn {
+      background: rgba(255, 255, 255, 0.25);
+      border: none;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-left: 6px;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .settings-icon-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+      transform: rotate(45deg);
+    }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 9999; opacity: 1; transition: opacity 0.2s ease;
+    }
+    .modal-box {
+      background: #ffffff; border-radius: 16px; padding: 28px 24px;
+      width: 100%; max-width: 420px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+      display: flex; flex-direction: column; gap: 16px; text-align: center; align-items: center;
+    }
+    .modal-box.admin-large {
+      max-width: 800px;
+      text-align: left;
+      align-items: stretch;
+    }
+    .modal-title { font-size: 1.2rem; font-weight: 700; color: var(--house-green); }
+    .modal-desc { font-size: 0.85rem; color: #6b7280; line-height: 1.4; }
+    .modal-btn {
+      background: var(--primary); color: white; border: none; padding: 12px;
+      border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .log-filter-bar {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+    }
+    .log-table-wrapper {
+      max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;
+    }
+    .log-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .log-table th {
+      background: #f1f5f9; color: #334155; padding: 10px; text-align: left;
+      position: sticky; top: 0; border-bottom: 1px solid var(--border);
+    }
+    .log-table td { padding: 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b; }
+    .log-table tr:hover { background: #f8fafc; }
 
     .control-card {
       background: var(--card); border-radius: 12px; padding: 18px 20px;
-      border: 1px solid var(--border); display: flex; gap: 16px; align-items: flex-end;
+      border: 1px solid var(--border); display: flex; flex-direction: column; gap: 14px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .form-group { display: flex; flex-direction: column; gap: 6px; width: 100%; }
@@ -71,10 +133,7 @@
       padding: 8px 12px; display: flex; align-items: center; gap: 10px; width: 100%;
       transition: background 0.2s, border-color 0.2s;
     }
-    .file-select-box.dragover {
-      background: #e6f2ed;
-      border-color: var(--primary);
-    }
+    .file-select-box.dragover { background: #e6f2ed; border-color: var(--primary); }
     .file-btn {
       background: var(--light-green); color: var(--house-green); border: none;
       padding: 6px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;
@@ -89,23 +148,17 @@
       width: 100%; border: 1px solid var(--border); background: #ffffff;
       border-radius: 8px; padding: 9px 12px; font-size: 0.85rem; outline: none;
     }
-    .input-field:focus { border-color: var(--primary); }
 
     .tab-bar {
       display: flex; background: var(--card); border-radius: 10px;
       padding: 4px; border: 1px solid var(--border); gap: 4px; flex-wrap: nowrap; overflow-x: auto;
     }
     .tab-btn {
-      flex: 1; border: none; background: transparent;
-      padding: 10px 12px; font-size: 0.85rem; font-weight: 600; color: #4b5563;
-      border-radius: 8px; cursor: pointer; transition: 0.2s;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      white-space: nowrap;
+      flex: 1; border: none; background: transparent; padding: 10px 12px; font-size: 0.85rem;
+      font-weight: 600; color: #4b5563; border-radius: 8px; cursor: pointer; transition: 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap;
     }
-    .tab-btn svg {
-      width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;
-      stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0;
-    }
+    .tab-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
     .tab-btn.active { background: var(--light-green); color: var(--house-green); font-weight: 700; }
 
     .section-card {
@@ -114,181 +167,83 @@
     }
 
     .sub-tabs { display: flex; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-    .sub-tab {
-      background: none; border: none; font-size: 0.9rem; font-weight: 600;
-      color: #6b7280; cursor: pointer; padding: 4px 8px;
-    }
+    .sub-tab { background: none; border: none; font-size: 0.9rem; font-weight: 600; color: #6b7280; cursor: pointer; padding: 4px 8px; }
     .sub-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
 
-    .candidate-grid {
-      display: flex; flex-direction: column; gap: 10px;
-      max-height: 350px; overflow-y: auto; padding: 4px;
-    }
+    .candidate-grid { display: flex; flex-direction: column; gap: 10px; max-height: 350px; overflow-y: auto; padding: 4px; }
     .candidate-card {
       border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px;
-      display: flex; align-items: center; justify-content: space-between;
-      background: #fafafa; transition: background 0.15s; gap: 12px;
+      display: flex; align-items: center; justify-content: space-between; background: #fafafa; transition: background 0.15s; gap: 12px;
     }
     .candidate-card:hover { background: var(--light-green); }
     .candidate-info { display: flex; align-items: center; gap: 12px; flex: 1; }
     .candidate-text { font-size: 0.9rem; font-weight: 600; color: #1f2937; word-break: break-all; }
     .candidate-img-preview { max-width: 120px; max-height: 60px; object-fit: contain; border: 1px solid var(--border); border-radius: 4px; background: #fff; }
-    .candidate-count {
-      font-size: 0.75rem; background: var(--light-green); color: var(--house-green);
-      padding: 2px 8px; border-radius: 12px; font-weight: 600; white-space: nowrap;
-    }
+    .candidate-count { font-size: 0.75rem; background: var(--light-green); color: var(--house-green); padding: 2px 8px; border-radius: 12px; font-weight: 600; white-space: nowrap; }
 
-    .status-toast {
-      padding: 12px 16px; border-radius: 8px; font-size: 0.9rem;
-      background: var(--light-green); color: var(--house-green); border: 1px solid var(--primary); display: none; font-weight: 600;
-    }
+    .status-toast { padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; background: var(--light-green); color: var(--house-green); border: 1px solid var(--primary); display: none; font-weight: 600; }
 
     .page-grid-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 16px;
-      max-height: 920px;
-      overflow-y: auto;
-      padding: 12px;
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px;
+      max-height: 920px; overflow-y: auto; padding: 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;
     }
     .page-thumb-card {
-      background: #ffffff;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      cursor: grab;
-      position: relative;
-      user-select: none;
-      transition: transform 0.15s, box-shadow 0.15s;
+      background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 8px;
+      display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: grab; position: relative; user-select: none; transition: transform 0.15s, box-shadow 0.15s;
     }
-    .page-thumb-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      transform: translateY(-2px);
-    }
-    .page-thumb-card:active { cursor: grabbing; }
-    .page-thumb-card.dragging { opacity: 0.4; border: 2px dashed var(--primary); }
-    .page-thumb-card canvas {
-      width: 100%; height: auto; border: 1px solid #e2e8f0;
-      border-radius: 4px; background: #ffffff; pointer-events: none;
-    }
+    .page-thumb-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
+    .page-thumb-card canvas { width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 4px; background: #ffffff; pointer-events: none; }
     .page-thumb-num { font-size: 0.8rem; font-weight: 700; color: #4b5563; }
     .page-thumb-del {
-      position: absolute; top: -6px; right: -6px; width: 22px; height: 22px;
-      background: var(--house-green); color: white; border-radius: 50%; font-size: 11px;
-      display: flex; align-items: center; justify-content: center; cursor: pointer;
-      font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; background: var(--house-green);
+      color: white; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold;
     }
 
-    .preview-container {
-      border: 1px solid var(--border); background: var(--house-green); border-radius: 8px;
-      min-height: 400px; overflow: auto; display: block;
-      padding: 20px; position: relative; text-align: center;
-    }
-    .canvas-wrapper {
-      position: relative; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      user-select: none; margin: 0 auto; text-align: left;
-    }
-    
-    canvas#pdfCanvas { 
-      background: white; 
-      display: none; 
-    }
+    .preview-container { border: 1px solid var(--border); background: var(--house-green); border-radius: 8px; min-height: 400px; overflow: auto; display: block; padding: 20px; position: relative; text-align: center; }
+    .canvas-wrapper { position: relative; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.3); user-select: none; margin: 0 auto; text-align: left; }
+    canvas#pdfCanvas { background: white; display: none; }
+    .empty-preview-text { color: rgba(255, 255, 255, 0.6); font-size: 0.95rem; font-weight: 600; text-align: center; padding: 60px 20px; }
 
-    .empty-preview-text {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 0.95rem;
-      font-weight: 600;
-      text-align: center;
-      padding: 60px 20px;
-    }
-
-    .mask-overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: auto; cursor: crosshair; display: none; z-index: 10;
-    }
-
-    .mask-box-element {
-      position: absolute; border: 1px solid var(--house-green); background: #ffffff !important;
-      box-sizing: border-box; cursor: move; z-index: 15;
-    }
-
+    .mask-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto; cursor: crosshair; display: none; z-index: 10; }
+    .mask-box-element { position: absolute; border: 1px solid var(--house-green); background: #ffffff !important; box-sizing: border-box; cursor: move; z-index: 15; }
     .text-box-element {
-      position: absolute; border: 2px dashed var(--primary); background: #ffffff;
-      box-sizing: border-box; cursor: move; display: flex; align-items: center; justify-content: flex-start;
-      padding: 4px 8px; overflow: hidden; white-space: nowrap; z-index: 25; font-family: sans-serif;
-      pointer-events: auto;
+      position: absolute; border: 2px dashed var(--primary); background: #ffffff; box-sizing: border-box;
+      cursor: move; display: flex; align-items: center; justify-content: flex-start; padding: 4px 8px; overflow: hidden; white-space: nowrap; z-index: 25; font-family: sans-serif; pointer-events: auto;
     }
     .text-box-element.selected { border: 2px solid var(--primary); box-shadow: 0 0 8px rgba(0, 112, 66, 0.4); }
-
     .img-box-element { position: absolute; border: 2px dashed var(--accent-green); box-sizing: border-box; cursor: move; z-index: 25; pointer-events: auto; }
     .img-box-element img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
-
-    /* 이동 영역 박스 레이어 및 클릭 우선순위 강화 */
     .link-box-element {
       position: absolute; border: 2px dashed #007042; background: rgba(0, 112, 66, 0.25) !important;
       box-sizing: border-box; cursor: move; display: flex; align-items: flex-start; justify-content: flex-start; z-index: 50; pointer-events: auto;
     }
     .link-box-element.selected { border: 2px solid #004d2d; background: rgba(0, 112, 66, 0.4) !important; box-shadow: 0 0 10px rgba(0, 112, 66, 0.8); }
-    .link-tag-badge {
-      background: var(--primary); color: #ffffff; padding: 3px 8px; border-radius: 4px;
-      font-size: 0.85rem; font-weight: 700; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.3); margin: 3px;
-    }
+    .link-tag-badge { background: var(--primary); color: #ffffff; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 700; pointer-events: none; margin: 3px; }
 
-    .mask-handle {
-      position: absolute; width: 10px; height: 10px; background: var(--primary);
-      border: 1px solid #ffffff; border-radius: 50%; z-index: 60;
-    }
+    .mask-handle { position: absolute; width: 10px; height: 10px; background: var(--primary); border: 1px solid #ffffff; border-radius: 50%; z-index: 60; }
     .handle-nw { top: -5px; left: -5px; cursor: nwse-resize; }
     .handle-ne { top: -5px; right: -5px; cursor: nesw-resize; }
     .handle-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
     .handle-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
 
     .mask-close-btn {
-      position: absolute; top: -8px; right: -8px; width: 20px; height: 20px;
-      background: var(--house-green); color: white; border-radius: 50%; font-size: 11px;
-      display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; z-index: 65;
+      position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; background: var(--house-green);
+      color: white; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; z-index: 65;
     }
 
-    .text-edit-toolbar {
-      display: flex; gap: 10px; align-items: center; background: #f9f9f9;
-      padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap;
-    }
+    .text-edit-toolbar { display: flex; gap: 10px; align-items: center; background: #f9f9f9; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap; }
     .toolbar-group { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; }
 
     .button-group-bottom { display: flex; gap: 12px; margin-top: 8px; }
-    
-    .btn-apply-preview {
-      background: var(--primary); color: white; border: none; padding: 14px 20px;
-      border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; flex: 1; transition: background 0.2s;
-    }
+    .btn-apply-preview { background: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; flex: 1; transition: background 0.2s; }
     .btn-apply-preview:hover { background: var(--primary-hover); }
-    
-    .btn-download-main {
-      background: var(--house-green); color: white; border: none; padding: 14px 20px;
-      border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; flex: 1; transition: background 0.2s;
-    }
+    .btn-download-main { background: var(--house-green); color: white; border: none; padding: 14px 20px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; flex: 1; transition: background 0.2s; }
     .btn-download-main:hover { background: #1a2824; }
 
-    .merge-dropzone {
-      border: 2px dashed var(--accent-green); background: var(--light-green); border-radius: 12px;
-      padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s ease;
-    }
+    .merge-dropzone { border: 2px dashed var(--accent-green); background: var(--light-green); border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s ease; }
     .merge-dropzone.dragover { background: #c2dcd2; border-color: var(--primary); transform: scale(1.01); }
-    .merge-file-list {
-      display: flex; flex-direction: column; gap: 8px; margin-top: 12px; max-height: 300px; overflow-y: auto;
-    }
-    .merge-file-item {
-      display: flex; align-items: center; justify-content: space-between; background: #ffffff;
-      border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; cursor: grab; user-select: none; transition: background 0.15s, transform 0.15s;
-    }
-    .merge-file-item:active { cursor: grabbing; }
+    .merge-file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; max-height: 300px; overflow-y: auto; }
+    .merge-file-item { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; cursor: grab; user-select: none; }
     .merge-file-item.dragging { opacity: 0.4; background: var(--light-green); }
     .merge-item-title { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 600; color: #374151; }
     .drag-handle-icon { color: #9ca3af; font-size: 1.1rem; }
@@ -296,6 +251,65 @@
   </style>
 </head>
 <body>
+
+<!-- 구글 로그인 모달 팝업 -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal-box">
+    <div style="font-size: 2.2rem;">🔐</div>
+    <div class="modal-title">사용자 인증이 필요합니다</div>
+    <div class="modal-desc">
+      구글 계정으로 로그인하여 인증을 진행해 주세요.
+    </div>
+    <!-- 구글 원터치 로그인 버튼 -->
+    <div id="g_id_onload"
+         data-client_id="668166398803-4vjafmts0h3bb98khjrh3gv1o8fbso8h.apps.googleusercontent.com"
+         data-callback="handleGoogleCredentialResponse">
+    </div>
+    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
+  </div>
+</div>
+
+<!-- 관리자 전용 일자별 감사 로그 모달 팝업 -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal-box admin-large">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div class="modal-title" style="display:flex; align-items:center; gap:8px;">
+        ⚙️ 관리자 시스템 감사 로그 (Audit Log)
+      </div>
+      <button onclick="closeAdminModal()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:#6b7280;">✕</button>
+    </div>
+
+    <div class="log-filter-bar">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <label style="font-size:0.85rem; font-weight:600; color:#475569;">조회 일자:</label>
+        <input type="date" id="adminLogDateFilter" class="input-field" style="width:160px; padding:6px;" onchange="renderAdminLogs()">
+        <button class="file-btn" onclick="resetLogFilter()">전체 날짜 보기</button>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="file-btn" onclick="exportLogsCSV()">📥 CSV 다운로드</button>
+      </div>
+    </div>
+
+    <div class="log-table-wrapper">
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th style="width:160px;">일시</th>
+            <th style="width:180px;">사용자 계정 (아이디)</th>
+            <th style="width:140px;">작업 유형</th>
+            <th>상세 작업 내용</th>
+          </tr>
+        </thead>
+        <tbody id="adminLogTableBody">
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end;">
+      <button class="modal-btn" onclick="closeAdminModal()" style="width:100px;">닫기</button>
+    </div>
+  </div>
+</div>
 
 <div class="app-container">
   <div class="header-banner">
@@ -306,9 +320,11 @@
         <p>PDF 문서 통합 편집기</p>
       </div>
     </div>
-    <div class="file-badge" id="fileBadge" style="display:none;">
+    
+    <div class="header-auth-badge" id="headerAuthBadge" style="display:none;">
       <span class="badge-dot"></span>
-      <span id="badgeFileName">파일 선택됨</span>
+      <span id="authenticatedUserEmail" style="font-weight:600;">user@gmail.com</span>
+      <button class="settings-icon-btn" onclick="openAdminSettingsModal()" title="관리자 설정">⚙️</button>
     </div>
   </div>
 
@@ -366,9 +382,7 @@
 
   <div class="section-card" id="sectionWatermark">
     <h3 style="font-size:1rem;">워터마크 탐지 및 삭제</h3>
-    <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">
-      PDF 전체에서 반복 탐지된 워터마크 항목을 체크하여 선택 삭제할 수 있습니다.
-    </p>
+    <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">PDF 전체에서 반복 탐지된 워터마크 항목을 체크하여 선택 삭제할 수 있습니다.</p>
     <div class="sub-tabs">
       <button class="sub-tab active" id="subText" onclick="switchSubTab('text')">텍스트 후보 <span id="textCandBadge">(0)</span></button>
       <button class="sub-tab" id="subImg" onclick="switchSubTab('image')">반복 이미지 후보 <span id="imgCandBadge">(0)</span></button>
@@ -380,9 +394,7 @@
 
   <div class="section-card" id="sectionMerge" style="display:none;">
     <h3 style="font-size:1rem;">여러 PDF 파일 하나로 병합하기</h3>
-    <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">
-      파일을 아래 영역에 끌어다 놓으세요. 목록 항목을 마우스로 잡고 끌어(Drag&Drop) <b>병합 순서</b>를 자유롭게 변경할 수 있습니다.
-    </p>
+    <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">파일을 아래 영역에 끌어다 놓으세요. 목록 항목을 마우스로 잡고 끌어(Drag&Drop) <b>병합 순서</b>를 자유롭게 변경할 수 있습니다.</p>
     <div class="merge-dropzone" id="mergeDropzone" onclick="triggerMergeFileInput()">
       <div style="font-size:1.8rem; margin-bottom:6px;">📂</div>
       <div style="font-weight:700; color:var(--house-green); font-size:0.95rem;">여기 클릭하여 PDF 파일 추가 또는 영역에 드래그 앤 드롭</div>
@@ -560,6 +572,181 @@
 
   let undoStack = [];
 
+  /* --- 구글 OAuth & Apps Script 중앙 로그 연동 설정 --- */
+  const ADMIN_EMAIL = 'roh@impact7.kr';
+  const AUTH_STORAGE_KEY = 'impact7_pdf_auth_email';
+  const LOG_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL'; // Google Apps Script URL
+
+  // JWT 파싱 함수 (Google credential 디코딩)
+  function parseJwt(token) {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    return JSON.parse(jsonPayload);
+  }
+
+  // Google Sign-In 콜백 함수
+  function handleGoogleCredentialResponse(response) {
+    const responsePayload = parseJwt(response.credential);
+    const userEmail = responsePayload.email;
+
+    localStorage.setItem(AUTH_STORAGE_KEY, userEmail);
+    setAuthenticatedUI(userEmail);
+    logUserAction('로그인', '구글 계정 인증 완료');
+  }
+
+  // 감사 로그 기록 (Google Apps Script 전송)
+  function logUserAction(type, detail) {
+    const currentUser = localStorage.getItem(AUTH_STORAGE_KEY) || 'Unknown';
+    const now = new Date();
+    
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+
+    const payload = {
+      action: 'write',
+      timestamp: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,
+      date: `${year}-${month}-${day}`,
+      user: currentUser,
+      type: type,
+      detail: detail
+    };
+
+    if (LOG_SCRIPT_URL && LOG_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL') {
+      fetch(LOG_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(err => console.error('로그 전송 오류:', err));
+    }
+  }
+
+  function initAuthState() {
+    const savedEmail = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (savedEmail) {
+      setAuthenticatedUI(savedEmail);
+    } else {
+      openAuthModal();
+    }
+  }
+
+  function setAuthenticatedUI(email) {
+    document.getElementById('authModal').style.display = 'none';
+    document.getElementById('headerAuthBadge').style.display = 'flex';
+    document.getElementById('authenticatedUserEmail').innerText = email;
+  }
+
+  function openAuthModal() {
+    const modal = document.getElementById('authModal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function checkAuthOrAlert() {
+    const savedEmail = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (savedEmail) return true;
+    openAuthModal();
+    return false;
+  }
+
+  /* --- 관리자 모달 및 중앙 서버 로그 불러오기 --- */
+  function openAdminSettingsModal() {
+    const currentUser = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (currentUser !== ADMIN_EMAIL) {
+      alert(`⚠️ 접근 권한이 없습니다.\n관리자 계정(${ADMIN_EMAIL})으로 접속한 경우에만 이용할 수 있습니다.`);
+      return;
+    }
+
+    document.getElementById('adminModal').style.display = 'flex';
+    document.getElementById('adminLogDateFilter').value = '';
+    renderAdminLogs();
+  }
+
+  function closeAdminModal() {
+    document.getElementById('adminModal').style.display = 'none';
+  }
+
+  async function renderAdminLogs() {
+    const filterDate = document.getElementById('adminLogDateFilter').value;
+    const tbody = document.getElementById('adminLogTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:30px;">중앙 DB에서 로그를 불러오는 중입니다...</td></tr>`;
+
+    if (!LOG_SCRIPT_URL || LOG_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL') {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ef4444; padding:30px;">Apps Script URL이 설정되지 않았습니다.</td></tr>`;
+      return;
+    }
+
+    try {
+      const response = await fetch(LOG_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'read' })
+      });
+      const logs = await response.json();
+      tbody.innerHTML = '';
+
+      const filteredLogs = filterDate ? logs.filter(l => l.date === filterDate) : logs;
+
+      if (filteredLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:30px;">기록된 작업 감사 로그가 없습니다.</td></tr>`;
+        return;
+      }
+
+      filteredLogs.reverse().forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><small style="color:#64748b;">${item.timestamp}</small></td>
+          <td><b>${item.user}</b></td>
+          <td><span style="background:#e2e8f0; padding:2px 8px; border-radius:12px; font-weight:600; font-size:0.75rem;">${item.type}</span></td>
+          <td>${item.detail}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ef4444; padding:30px;">로그를 불러오는 데 실패했습니다.</td></tr>`;
+    }
+  }
+
+  function resetLogFilter() {
+    document.getElementById('adminLogDateFilter').value = '';
+    renderAdminLogs();
+  }
+
+  function exportLogsCSV() {
+    const tbody = document.getElementById('adminLogTableBody');
+    if (!tbody || tbody.rows.length === 0) {
+      alert('내보낼 로그 데이터가 없습니다.');
+      return;
+    }
+
+    let csvContent = "\uFEFF일시,사용자 계정,작업 유형,상세 내용\n";
+    for (let row of tbody.rows) {
+      if (row.cells.length === 4) {
+        const time = row.cells[0].innerText;
+        const user = row.cells[1].innerText;
+        const type = row.cells[2].innerText;
+        const detail = row.cells[3].innerText;
+        csvContent += `"${time}","${user}","${type}","${detail.replace(/"/g, '""')}"\n`;
+      }
+    }
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pdf_audit_logs_${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
   function getCurrentPageNum() {
     if (activePages && activePages.length > currentActiveIndex) {
       return activePages[currentActiveIndex];
@@ -581,6 +768,7 @@
   }
 
   function undoLastAction() {
+    if (!checkAuthOrAlert()) return;
     if (undoStack.length === 0) {
       showToast('취소할 이전 작업이 없습니다.');
       return;
@@ -593,6 +781,7 @@
 
     syncOverlayBoxes(state.pageNum);
     showToast('마지막 작업을 취소했습니다.');
+    logUserAction('실행 취소', `p.${state.pageNum} 작업 실행 취소`);
   }
 
   document.addEventListener('keydown', (e) => {
@@ -603,9 +792,18 @@
     }
   });
 
-  function triggerFileInput() { document.getElementById('fileInput').click(); }
-  function triggerImgInput() { document.getElementById('imageFileInput').click(); }
-  function triggerMergeFileInput() { document.getElementById('mergeFileInput').click(); }
+  function triggerFileInput() { 
+    if (!checkAuthOrAlert()) return;
+    document.getElementById('fileInput').click(); 
+  }
+  function triggerImgInput() { 
+    if (!checkAuthOrAlert()) return;
+    document.getElementById('imageFileInput').click(); 
+  }
+  function triggerMergeFileInput() { 
+    if (!checkAuthOrAlert()) return;
+    document.getElementById('mergeFileInput').click(); 
+  }
 
   function showToast(msg, isError = false) {
     const toast = document.getElementById('statusToast');
@@ -677,13 +875,13 @@
   }
 
   function loadMainPdfFile(file) {
+    if (!checkAuthOrAlert()) return;
+
     if (!file || file.type !== 'application/pdf') {
       alert('PDF 파일만 선택이 가능합니다.');
       return;
     }
     document.getElementById('fileNameDisplay').innerText = file.name;
-    document.getElementById('badgeFileName').innerText = file.name;
-    document.getElementById('fileBadge').style.display = 'flex';
 
     const reader = new FileReader();
     reader.onload = function(evt) {
@@ -699,6 +897,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    initAuthState();
+
     const mainDropzone = document.getElementById('mainFileDropzone');
     if (mainDropzone) {
       ['dragenter', 'dragover'].forEach(eventName => {
@@ -751,6 +951,8 @@
   }
 
   function addMergeFiles(files) {
+    if (!checkAuthOrAlert()) return;
+
     const validPdfs = files.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
     if (validPdfs.length === 0) {
       alert('PDF 파일만 드래그 및 선택이 가능합니다.');
@@ -821,6 +1023,8 @@
   }
 
   async function startMergeProcess() {
+    if (!checkAuthOrAlert()) return;
+
     if (mergeFiles.length < 2) {
       alert('PDF 병합을 위해 2개 이상의 PDF 파일을 등록해 주세요.');
       return;
@@ -856,6 +1060,7 @@
         URL.revokeObjectURL(downloadUrl);
       }, 100);
 
+      logUserAction('PDF 병합', `${mergeFiles.length}개 파일 병합 완료 (${mergeFiles.map(f=>f.name).join(', ')})`);
       showToast('성공적으로 모든 PDF 파일이 병합되어 다운로드되었습니다!');
     } catch (err) {
       console.error(err);
@@ -864,6 +1069,8 @@
   }
 
   function onImageSelected(e) {
+    if (!checkAuthOrAlert()) return;
+
     const file = e.target.files[0];
     if (!file) return;
 
@@ -907,6 +1114,7 @@
         imageBoxes.get(pageNum).push(newBox);
         syncOverlayBoxes(pageNum);
         showToast('이미지가 미리보기 화면에 추가되었습니다!');
+        logUserAction('이미지 삽입', `p.${pageNum} 페이지에 이미지 삽입 (${file.name})`);
       };
       tempImg.src = dataUrl;
     };
@@ -1017,6 +1225,7 @@
           renderPageThumbnails();
           renderRawPage(getCurrentPageNum());
           showToast(`페이지 순서가 변경되었습니다.`);
+          logUserAction('페이지 순서 변경', `순서 변경: index ${fromIndex + 1} -> ${toIndex + 1}`);
         }
       };
     }
@@ -1036,9 +1245,12 @@
     renderPageThumbnails();
     renderRawPage(getCurrentPageNum());
     showToast(`p.${removedPageNum} 페이지가 삭제되었습니다.`);
+    logUserAction('페이지 삭제', `p.${removedPageNum} 페이지 삭제 완료`);
   }
 
   function applyMaskToAllPages() {
+    if (!checkAuthOrAlert()) return;
+
     if (activePages.length === 0) return;
     const currentPageNum = getCurrentPageNum();
     const currentMasks = manualMasks.get(currentPageNum) || [];
@@ -1066,16 +1278,20 @@
     }
 
     showToast(`현재 마스킹 영역이 전체 ${totalPages}개 페이지에 일괄 적용되었습니다!`);
+    logUserAction('영역 마스킹 일괄 적용', `전체 ${totalPages}개 페이지에 마스킹 영역 복사 적용`);
     syncOverlayBoxes(currentPageNum);
   }
 
   function rotateCurrentPage() {
+    if (!checkAuthOrAlert()) return;
+
     if (activePages.length === 0) return;
     const pageNum = getCurrentPageNum();
     const currentRot = pageRotations.get(pageNum) || 0;
     const newRot = (currentRot + 90) % 360;
     pageRotations.set(pageNum, newRot);
     renderRawPage(pageNum);
+    logUserAction('페이지 회전', `p.${pageNum} 페이지 90도 회전 (총 ${newRot}도)`);
   }
 
   async function renderRawPage(pageNum) {
@@ -1112,6 +1328,8 @@
   }
 
   async function processAndDownload() {
+    if (!checkAuthOrAlert()) return;
+
     if (!pdfJsDoc) {
       alert('PDF 파일을 먼저 로드해주세요.');
       return;
@@ -1260,10 +1478,11 @@
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const downloadUrl = URL.createObjectURL(blob);
 
+        const fileName = `edited_pdf_${Date.now()}.pdf`;
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = downloadUrl;
-        a.download = `edited_pdf_${Date.now()}.pdf`;
+        a.download = fileName;
         document.body.appendChild(a);
         a.click();
         
@@ -1272,6 +1491,7 @@
           URL.revokeObjectURL(downloadUrl);
         }, 100);
 
+        logUserAction('PDF 저장 및 다운로드', `편집 결과물 PDF 다운로드 완료 (${fileName})`);
         showToast('선명도가 개선된 PDF 파일이 정상적으로 다운로드되었습니다.');
       } catch (err) {
         console.error('Download error:', err);
@@ -1489,6 +1709,8 @@
   }
 
   async function applyCheckedWatermarks() {
+    if (!checkAuthOrAlert()) return;
+
     let appliedCount = 0;
 
     if (currentSubTab === 'text') {
@@ -1533,6 +1755,7 @@
       syncOverlayBoxes(getCurrentPageNum());
     }
     
+    logUserAction('워터마크 삭제 적용', `선택된 워터마크 마스킹 처리 (${appliedCount}개 영역)`);
     alert('편집이 완료 되었습니다.');
   }
 
@@ -1598,6 +1821,8 @@
     elem.appendChild(closeBtn);
 
     elem.onmousedown = (e) => {
+      if (!checkAuthOrAlert()) return;
+
       if (e.target.classList.contains('mask-handle') || e.target.classList.contains('mask-close-btn')) return;
       e.stopPropagation();
       saveUndoState();
@@ -1617,6 +1842,8 @@
   }
 
   function addTextBoxOverCurrentPage() {
+    if (!checkAuthOrAlert()) return;
+
     if (!pdfJsDoc || activePages.length === 0) {
       alert('PDF 파일을 먼저 선택해 주세요.');
       return;
@@ -1626,13 +1853,14 @@
     const newBox = { 
       id: 'text_' + Date.now(), 
       x: 50, y: 50, w: 200, h: 40, 
-      text: '2단지 고등관', fontSize: 16, color: '#000000', bgColor: '#ffffff' 
+      text: '텍스트 입력', fontSize: 16, color: '#000000', bgColor: '#ffffff' 
     };
     if (!textBoxes.has(pageNum)) textBoxes.set(pageNum, []);
     textBoxes.get(pageNum).push(newBox);
     syncOverlayBoxes(pageNum);
     selectTextBox(newBox.id);
     showToast('텍스트 상자가 추가되었습니다.');
+    logUserAction('텍스트 추가', `p.${pageNum} 페이지에 텍스트 상자 추가`);
   }
 
   function selectTextBox(id) {
@@ -1663,8 +1891,9 @@
     }
   }
 
-  /* --- 이동 영역 설정 안전 생성 함수 --- */
   function addLinkBoxOverCurrentPage() {
+    if (!checkAuthOrAlert()) return;
+
     if (!pdfJsDoc || activePages.length === 0) {
       alert('PDF 파일을 먼저 선택해 주세요.');
       return;
@@ -1698,6 +1927,7 @@
     syncOverlayBoxes(pageNum);
     selectLinkBox(newBox.id);
     showToast('이동 영역 상자가 화면 중앙에 정상적으로 생성되었습니다!');
+    logUserAction('링크 영역 추가', `p.${pageNum} 페이지에 이동 영역 추가`);
   }
 
   function selectLinkBox(id) {
@@ -1750,6 +1980,8 @@
     if (!overlay) return;
 
     overlay.onmousedown = (e) => {
+      if (!checkAuthOrAlert()) return;
+
       if (e.target.dataset.handle) {
         saveUndoState();
         isResizing = true;
@@ -1832,6 +2064,7 @@
         if (w > 10 && h > 10) {
           if (!manualMasks.has(pageNum)) manualMasks.set(pageNum, []);
           manualMasks.get(pageNum).push({ id: 'mask_' + Date.now(), x, y, w, h });
+          logUserAction('영역 마스킹 추가', `p.${pageNum} 페이지 수동 마스킹 영역 지정`);
         }
         tempBoxElem.remove(); tempBoxElem = null;
         syncOverlayBoxes(pageNum);

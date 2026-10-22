@@ -301,6 +301,12 @@
       <div style="display:flex; gap:6px;">
         <button class="file-btn" onclick="resetLogFilter()">필터 초기화</button>
         <button class="file-btn" onclick="exportLogsCSV()">📥 CSV 다운로드</button>
+        <a href="https://docs.google.com/spreadsheets/d/1d1F1dLGcU_oJLSbcpbW1QgCjrpmdAgNbu_Nb73McG80/edit?usp=sharing" 
+           target="_blank" 
+           class="file-btn" 
+           style="background: var(--primary); color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+           📊 구글 시트 바로가기
+        </a>
       </div>
     </div>
 
@@ -730,7 +736,7 @@
     renderAdminLogTable(fetchedRawLogs);
   }
 
-function renderAdminLogTable(logs) {
+  function renderAdminLogTable(logs) {
     const tbody = document.getElementById('adminLogTableBody');
     if (!logs || logs.length === 0) {
       tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#9ca3af;">조건에 일치하는 감사 로그 이력이 없습니다.</td></tr>';
@@ -739,7 +745,7 @@ function renderAdminLogTable(logs) {
 
     let html = '';
     logs.slice().reverse().forEach(log => {
-      // 1. timestamp / date 원본 문자열에서 앞 10자리(YYYY-MM-DD)만 정확히 잘라냄
+      // 1. 일시를 YYYY-MM-DD (년-월-일) 10자리로 한 줄 정제
       let rawDate = String(log.date || log.timestamp || '');
       let formattedDate = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
 

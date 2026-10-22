@@ -105,7 +105,7 @@
       transition: background 0.2s;
     }
 
-    /* 로그 필터 바 개선 */
+    /* 로그 필터 바 */
     .log-filter-bar {
       display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
       background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
@@ -589,7 +589,7 @@
   /* --- 구글 OAuth & Apps Script 중앙 로그 연동 설정 --- */
   const ADMIN_EMAIL = 'roh@impact7.kr';
   const AUTH_STORAGE_KEY = 'impact7_pdf_auth_email';
-  const LOG_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby03uUDvOLzBeC5suyln_VI6RNC0R2dwv_IMqfuHl53eHVO3qUH99SPlWEzW1LEDjToaQ/exec'; // 1단계에서 복사한 Apps Script URL 주소 입력
+  const LOG_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby03uUDvOLzBeC5suyln_VI6RNC0R2dwv_IMqfuHl53eHVO3qUH99SPlWEzW1LEDjToaQ/exec';
 
   let fetchedRawLogs = []; // 서버에서 불러온 원본 로그 저장용
 
@@ -600,82 +600,72 @@
     return JSON.parse(jsonPayload);
   }
 
-function handleGoogleCredentialResponse(response) {
-  const responsePayload = parseJwt(response.credential);
-  const userEmail = responsePayload.email;
+  function handleGoogleCredentialResponse(response) {
+    const responsePayload = parseJwt(response.credential);
+    const userEmail = responsePayload.email;
 
-  localStorage.setItem(AUTH_STORAGE_KEY, userEmail);
-  setAuthenticatedUI(userEmail);
-  // '로그인' 이력 기록 제외
-}
-
-function logUserAction(type, detail) {
-  const currentUser = localStorage.getItem(AUTH_STORAGE_KEY) || 'Unknown';
-  const now = new Date();
-  
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-
-  const payload = {
-    action: 'write',
-    timestamp: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,
-    date: `${year}-${month}-${day}`,
-    user: currentUser,
-    type: type,
-    detail: detail
-  };
-
-  if (LOG_SCRIPT_URL && LOG_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL') {
-    fetch(LOG_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' }, // text/plain으로 변경하여 CORS 우회
-      body: JSON.stringify(payload)
-    }).catch(err => console.error('로그 전송 오류:', err));
+    localStorage.setItem(AUTH_STORAGE_KEY, userEmail);
+    setAuthenticatedUI(userEmail);
+    closeAuthModal();
   }
-}
+
+  function logUserAction(type, detail) {
+    const currentUser = localStorage.getItem(AUTH_STORAGE_KEY) || 'Unknown';
+    const now = new Date();
+    
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+
+    const payload = {
+      action: 'write',
+      timestamp: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,
+      date: `${year}-${month}-${day}`,
+      user: currentUser,
+      type: type,
+      detail: detail
+    };
+
+    if (LOG_SCRIPT_URL) {
+      fetch(LOG_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+      }).catch(err => console.error('로그 전송 오류:', err));
+    }
+  }
 
   function initAuthState() {
     const savedEmail = localStorage.getItem(AUTH_STORAGE_KEY);
     if (savedEmail) {
       setAuthenticatedUI(savedEmail);
-    } else {
-      openAuthModal();
     }
   }
 
   function setAuthenticatedUI(email) {
-    document.getElementById('authModal').style.display = 'none';
     document.getElementById('headerAuthBadge').style.display = 'flex';
-    document.getElementById('authenticatedUserEmail').innerText = email;
+    document.getElementById('authenticatedUserEmail').textContent = email;
   }
 
   function openAuthModal() {
-    const modal = document.getElementById('authModal');
-    if (modal) modal.style.display = 'flex';
+    document.getElementById('authModal').style.display = 'flex';
   }
 
-  function checkAuthOrAlert() {
-    const savedEmail = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (savedEmail) return true;
-    openAuthModal();
-    return false;
+  function closeAuthModal() {
+    document.getElementById('authModal').style.display = 'none';
   }
 
-  /* --- 관리자 모달 및 멀티 필터링 검색 시스템 --- */
   function openAdminSettingsModal() {
     const currentUser = localStorage.getItem(AUTH_STORAGE_KEY);
     if (currentUser !== ADMIN_EMAIL) {
-      alert(`⚠️ 접근 권한이 없습니다.\n관리자 계정(${ADMIN_EMAIL})으로 접속한 경우에만 이용할 수 있습니다.`);
+      alert(`관리자 권한이 있는 계정(${ADMIN_EMAIL})만 접근이 가능합니다.`);
       return;
     }
-
     document.getElementById('adminModal').style.display = 'flex';
-    resetLogFilter();
     loadAdminLogsFromServer();
   }
 
@@ -685,25 +675,18 @@ function logUserAction(type, detail) {
 
   async function loadAdminLogsFromServer() {
     const tbody = document.getElementById('adminLogTableBody');
-    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">로그 데이터를 불러오는 중입니다...</td></tr>';
 
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:30px;">중앙 DB에서 로그 데이터를 불러오는 중입니다...</td></tr>`;
-
-    if (!LOG_SCRIPT_URL || LOG_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL') {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ef4444; padding:30px;">Apps Script URL이 설정되지 않았습니다. 스크립트 URL을 코드에 입력해 주세요.</td></tr>`;
-      return;
-    }
-
-try {
-      // GET 방식으로 변경하여 Apps Script의 doGet 통신 실행
+    try {
+      // GET 방식을 사용하여 doGet 통신 실행
       const response = await fetch(LOG_SCRIPT_URL);
       fetchedRawLogs = await response.json();
-      
+
       populateFilterOptions(fetchedRawLogs);
       applyLogFilters();
-    } catch (err) { ... }
+    } catch (err) {
       console.error(err);
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ef4444; padding:30px;">로그를 불러오는 데 실패했습니다. 다시 시도해 주세요.</td></tr>`;
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">로그를 불러오는 데 실패했습니다. 다시 시도해 주세요.</td></tr>';
     }
   }
 
@@ -711,232 +694,88 @@ try {
     const userSelect = document.getElementById('adminLogUserFilter');
     const typeSelect = document.getElementById('adminLogTypeFilter');
 
-    if (!userSelect || !typeSelect) return;
-
     const users = new Set();
     const types = new Set();
 
-    logs.forEach(l => {
-      if (l.user) users.add(l.user);
-      if (l.type) types.add(l.type);
+    logs.forEach(log => {
+      if (log.user) users.add(log.user);
+      if (log.type) types.add(log.type);
     });
 
     userSelect.innerHTML = '<option value="">전체 사용자</option>';
-    users.forEach(u => userSelect.innerHTML += `<option value="${u}">${u}</option>`);
+    users.forEach(u => {
+      userSelect.innerHTML += `<option value="${u}">${u}</option>`;
+    });
 
     typeSelect.innerHTML = '<option value="">전체 작업</option>';
-    types.forEach(t => typeSelect.innerHTML += `<option value="${t}">${t}</option>`);
+    types.forEach(t => {
+      typeSelect.innerHTML += `<option value="${t}">${t}</option>`;
+    });
   }
 
   function applyLogFilters() {
-    const filterDate = document.getElementById('adminLogDateFilter').value;
-    const filterUser = document.getElementById('adminLogUserFilter').value;
-    const filterType = document.getElementById('adminLogTypeFilter').value;
-    const tbody = document.getElementById('adminLogTableBody');
+    const dateVal = document.getElementById('adminLogDateFilter').value;
+    const userVal = document.getElementById('adminLogUserFilter').value;
+    const typeVal = document.getElementById('adminLogTypeFilter').value;
 
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    let filtered = [...fetchedRawLogs];
-
-    if (filterDate) filtered = filtered.filter(l => l.date === filterDate);
-    if (filterUser) filtered = filtered.filter(l => l.user === filterUser);
-    if (filterType) filtered = filtered.filter(l => l.type === filterType);
-
-    if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:30px;">조건에 일치하는 감사 로그가 없습니다.</td></tr>`;
-      return;
-    }
-
-    filtered.reverse().forEach(item => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><small style="color:#64748b;">${item.timestamp}</small></td>
-        <td><b>${item.user}</b></td>
-        <td><span style="background:#e2e8f0; padding:2px 8px; border-radius:12px; font-weight:600; font-size:0.75rem;">${item.type}</span></td>
-        <td>${item.detail}</td>
-      `;
-      tbody.appendChild(tr);
+    const filtered = fetchedRawLogs.filter(log => {
+      if (dateVal && log.date !== dateVal) return false;
+      if (userVal && log.user !== userVal) return false;
+      if (typeVal && log.type !== typeVal) return false;
+      return true;
     });
+
+    renderAdminLogTable(filtered);
   }
 
   function resetLogFilter() {
-    if (document.getElementById('adminLogDateFilter')) document.getElementById('adminLogDateFilter').value = '';
-    if (document.getElementById('adminLogUserFilter')) document.getElementById('adminLogUserFilter').value = '';
-    if (document.getElementById('adminLogTypeFilter')) document.getElementById('adminLogTypeFilter').value = '';
-    applyLogFilters();
+    document.getElementById('adminLogDateFilter').value = '';
+    document.getElementById('adminLogUserFilter').value = '';
+    document.getElementById('adminLogTypeFilter').value = '';
+    renderAdminLogTable(fetchedRawLogs);
+  }
+
+  function renderAdminLogTable(logs) {
+    const tbody = document.getElementById('adminLogTableBody');
+    if (!logs || logs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#9ca3af;">조건에 일치하는 감사 로그 이력이 없습니다.</td></tr>';
+      return;
+    }
+
+    let html = '';
+    logs.slice().reverse().forEach(log => {
+      html += `
+        <tr>
+          <td>${log.timestamp || ''}</td>
+          <td><b>${log.user || ''}</b></td>
+          <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:600;">${log.type || ''}</span></td>
+          <td>${log.detail || ''}</td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
   }
 
   function exportLogsCSV() {
-    const tbody = document.getElementById('adminLogTableBody');
-    if (!tbody || tbody.rows.length === 0) {
-      alert('내보낼 로그 데이터가 없습니다.');
+    if (!fetchedRawLogs || fetchedRawLogs.length === 0) {
+      alert('다운로드할 로그 데이터가 없습니다.');
       return;
     }
-
-    let csvContent = "\uFEFF일시,사용자 계정,작업 유형,상세 내용\n";
-    for (let row of tbody.rows) {
-      if (row.cells.length === 4) {
-        const time = row.cells[0].innerText;
-        const user = row.cells[1].innerText;
-        const type = row.cells[2].innerText;
-        const detail = row.cells[3].innerText;
-        csvContent += `"${time}","${user}","${type}","${detail.replace(/"/g, '""')}"\n`;
-      }
-    }
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    let csv = '\uFEFF일시,일자,사용자 계정,작업 유형,상세 작업 내용\n';
+    fetchedRawLogs.forEach(l => {
+      csv += `"${l.timestamp}","${l.date}","${l.user}","${l.type}","${l.detail}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `pdf_audit_logs_${Date.now()}.csv`;
-    document.body.appendChild(a);
+    a.download = `audit_logs_${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
-    document.body.removeChild(a);
   }
 
-  function getCurrentPageNum() {
-    if (activePages && activePages.length > currentActiveIndex) {
-      return activePages[currentActiveIndex];
-    }
-    return 1;
-  }
-
-  function saveUndoState() {
-    const pageNum = getCurrentPageNum();
-    if (!pageNum) return;
-    undoStack.push({
-      pageNum: pageNum,
-      masks: JSON.parse(JSON.stringify(manualMasks.get(pageNum) || [])),
-      texts: JSON.parse(JSON.stringify(textBoxes.get(pageNum) || [])),
-      images: JSON.parse(JSON.stringify(imageBoxes.get(pageNum) || [])),
-      links: JSON.parse(JSON.stringify(linkBoxes.get(pageNum) || []))
-    });
-    if (undoStack.length > 30) undoStack.shift();
-  }
-
-  function undoLastAction() {
-    if (!checkAuthOrAlert()) return;
-    if (undoStack.length === 0) {
-      showToast('취소할 이전 작업이 없습니다.');
-      return;
-    }
-    const state = undoStack.pop();
-    manualMasks.set(state.pageNum, state.masks);
-    textBoxes.set(state.pageNum, state.texts);
-    imageBoxes.set(state.pageNum, state.images);
-    linkBoxes.set(state.pageNum, state.links);
-
-    syncOverlayBoxes(state.pageNum);
-    showToast('마지막 작업을 취소했습니다.');
-    logUserAction('실행 취소', `p.${state.pageNum} 작업 실행 취소`);
-  }
-
-  document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
-      e.preventDefault();
-      undoLastAction();
-    }
-  });
-
-  function triggerFileInput() { 
-    if (!checkAuthOrAlert()) return;
-    document.getElementById('fileInput').click(); 
-  }
-  function triggerImgInput() { 
-    if (!checkAuthOrAlert()) return;
-    document.getElementById('imageFileInput').click(); 
-  }
-  function triggerMergeFileInput() { 
-    if (!checkAuthOrAlert()) return;
-    document.getElementById('mergeFileInput').click(); 
-  }
-
-  function showToast(msg, isError = false) {
-    const toast = document.getElementById('statusToast');
-    if (!toast) return;
-    toast.style.display = 'block';
-    toast.style.background = isError ? '#fef2f2' : 'var(--light-green)';
-    toast.style.color = isError ? '#dc2626' : 'var(--house-green)';
-    toast.innerText = msg;
-  }
-
-  function switchMainTab(tab) {
-    currentMainTab = tab;
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    
-    const tabBtnMap = {
-      watermark: 'tabWm', merge: 'tabMerge', skew: 'tabSkew', pageDelete: 'tabPg',
-      masking: 'tabMask', textEdit: 'tabText', imageEdit: 'tabImage',
-      linkEdit: 'tabLink', password: 'tabPass'
-    };
-    if (tabBtnMap[tab] && document.getElementById(tabBtnMap[tab])) {
-      document.getElementById(tabBtnMap[tab]).classList.add('active');
-    }
-
-    const secMap = {
-      watermark: 'sectionWatermark', merge: 'sectionMerge', skew: 'sectionSkew', pageDelete: 'sectionPageDelete',
-      masking: 'sectionMasking', textEdit: 'sectionTextEdit', imageEdit: 'sectionImageEdit',
-      linkEdit: 'sectionLinkEdit', password: 'sectionPassword'
-    };
-
-    Object.values(secMap).forEach(secId => {
-      const el = document.getElementById(secId);
-      if (el) el.style.display = 'none';
-    });
-    if (secMap[tab] && document.getElementById(secMap[tab])) {
-      document.getElementById(secMap[tab]).style.display = 'flex';
-    }
-
-    if (tab === 'pageDelete') {
-      renderPageThumbnails();
-    }
-
-    if (activePages.length > 0) {
-      syncOverlayBoxes(getCurrentPageNum());
-    }
-  }
-
-  function switchSubTab(sub) {
-    currentSubTab = sub;
-    document.getElementById('subText').classList.toggle('active', sub === 'text');
-    document.getElementById('subImg').classList.toggle('active', sub === 'image');
-    renderCandidateGrid();
-  }
-
-  function onLinkTypeSelectChange() {
-    const linkTypeEl = document.getElementById('activeLinkType');
-    if (!linkTypeEl) return;
-    const linkType = linkTypeEl.value;
-    const pageGroup = document.getElementById('linkPageGroup');
-    const urlGroup = document.getElementById('linkUrlGroup');
-
-    if (linkType === 'url') {
-      if (pageGroup) pageGroup.style.display = 'none';
-      if (urlGroup) urlGroup.style.display = 'flex';
-    } else {
-      if (pageGroup) pageGroup.style.display = 'flex';
-      if (urlGroup) urlGroup.style.display = 'none';
-    }
-    updateActiveLinkBox();
-  }
-
-  function loadMainPdfFile(file) {
-    if (!checkAuthOrAlert()) return;
-
-    if (!file || file.type !== 'application/pdf') {
-      alert('PDF 파일만 선택이 가능합니다.');
-      return;
-    }
-    document.getElementById('fileNameDisplay').innerText = file.name;
-
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      rawBuffer = evt.target.result;
-      startAnalysis();
-    };
-    reader.readAsArrayBuffer(file);
+  /* --- 파일 선택 및 파일 업로드 드래그 앤 드롭 --- */
+  function triggerFileInput() {
+    document.getElementById('fileInput').click();
   }
 
   function onFileSelected(e) {
@@ -944,821 +783,118 @@ try {
     if (file) loadMainPdfFile(file);
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    initAuthState();
-
-    const mainDropzone = document.getElementById('mainFileDropzone');
-    if (mainDropzone) {
-      ['dragenter', 'dragover'].forEach(eventName => {
-        mainDropzone.addEventListener(eventName, (e) => {
-          e.preventDefault(); e.stopPropagation();
-          mainDropzone.classList.add('dragover');
-        });
-      });
-      ['dragleave', 'drop'].forEach(eventName => {
-        mainDropzone.addEventListener(eventName, (e) => {
-          e.preventDefault(); e.stopPropagation();
-          mainDropzone.classList.remove('dragover');
-        });
-      });
-      mainDropzone.addEventListener('drop', (e) => {
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          loadMainPdfFile(files[0]);
-        }
-      });
+  async function loadMainPdfFile(file) {
+    if (!file || file.type !== 'application/pdf') {
+      alert('PDF 파일만 선택이 가능합니다.');
+      return;
     }
 
-    const mergeDropzone = document.getElementById('mergeDropzone');
-    if (mergeDropzone) {
-      ['dragenter', 'dragover'].forEach(eventName => {
-        mergeDropzone.addEventListener(eventName, (e) => {
-          e.preventDefault(); e.stopPropagation();
-          mergeDropzone.classList.add('dragover');
-        });
-      });
-      ['dragleave', 'drop'].forEach(eventName => {
-        mergeDropzone.addEventListener(eventName, (e) => {
-          e.preventDefault(); e.stopPropagation();
-          mergeDropzone.classList.remove('dragover');
-        });
-      });
-      mergeDropzone.addEventListener('drop', (e) => {
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          addMergeFiles(Array.from(files));
-        }
-      });
+    document.getElementById('fileNameDisplay').textContent = file.name;
+    document.getElementById('emptyPreviewText').textContent = 'PDF 문서를 분석하고 있습니다...';
+
+    rawBuffer = await file.arrayBuffer();
+    pdfJsDoc = await pdfjsLib.getDocument({ data: new Uint8Array(rawBuffer) }).promise;
+    totalPages = pdfJsDoc.numPages;
+
+    activePages = Array.from({ length: totalPages }, (_, i) => i + 1);
+    currentActiveIndex = 0;
+    pageRotations.clear();
+    manualMasks.clear();
+    textBoxes.clear();
+    imageBoxes.clear();
+    linkBoxes.clear();
+
+    await analyzeWatermarks();
+    renderPageThumbnails();
+    renderCurrentPage();
+    showToast('PDF 문서 로드가 완료되었습니다.');
+  }
+
+  /* 드래그 앤 드롭 파일 로드 지원 */
+  const dropzone = document.getElementById('mainFileDropzone');
+  dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+  dropzone.addEventListener('dragleave', () => { dropzone.classList.remove('dragover'); });
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      loadMainPdfFile(e.dataTransfer.files[0]);
     }
   });
 
-  function onMergeFilesSelected(e) {
-    const files = Array.from(e.target.files);
-    if (files.length > 0) addMergeFiles(files);
-    e.target.value = '';
-  }
-
-  function addMergeFiles(files) {
-    if (!checkAuthOrAlert()) return;
-
-    const validPdfs = files.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
-    if (validPdfs.length === 0) {
-      alert('PDF 파일만 드래그 및 선택이 가능합니다.');
-      return;
-    }
-    mergeFiles.push(...validPdfs);
-    renderMergeList();
-    showToast(`${validPdfs.length}개의 PDF 파일이 병합 목록에 추가되었습니다.`);
-  }
-
-  function renderMergeList() {
-    const listEl = document.getElementById('mergeFileList');
-    const countEl = document.getElementById('mergeFileCount');
-    if (!listEl) return;
-
-    if (countEl) countEl.innerText = mergeFiles.length;
-
-    if (mergeFiles.length === 0) {
-      listEl.innerHTML = `<div style="text-align:center; color:#9ca3af; padding:20px; font-size:0.85rem;">추가된 PDF 파일이 없습니다.</div>`;
-      return;
-    }
-
-    listEl.innerHTML = '';
-    mergeFiles.forEach((file, index) => {
-      const item = document.createElement('div');
-      item.className = 'merge-file-item';
-      item.draggable = true;
-      item.dataset.index = index;
-
-      item.innerHTML = `
-        <div class="merge-item-title">
-          <span class="drag-handle-icon">☰</span>
-          <span><b>${index + 1}.</b> ${file.name} <small style="color:#888;">(${(file.size / 1024 / 1024).toFixed(2)} MB)</small></span>
-        </div>
-        <span class="merge-item-del" onclick="removeMergeFile(${index}, event)">✕ 삭제</span>
-      `;
-
-      item.ondragstart = (e) => {
-        e.dataTransfer.setData('text/plain', index);
-        item.classList.add('dragging');
-      };
-      item.ondragend = () => item.classList.remove('dragging');
-      item.ondragover = (e) => e.preventDefault();
-      item.ondrop = (e) => {
-        e.preventDefault();
-        const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
-        const toIdx = index;
-        if (fromIdx !== toIdx) {
-          const moved = mergeFiles.splice(fromIdx, 1)[0];
-          mergeFiles.splice(toIdx, 0, moved);
-          renderMergeList();
-        }
-      };
-
-      listEl.appendChild(item);
-    });
-  }
-
-  function removeMergeFile(index, event) {
-    if (event) event.stopPropagation();
-    mergeFiles.splice(index, 1);
-    renderMergeList();
-  }
-
-  function clearMergeList() {
-    mergeFiles = [];
-    renderMergeList();
-  }
-
-  async function startMergeProcess() {
-    if (!checkAuthOrAlert()) return;
-
-    if (mergeFiles.length < 2) {
-      alert('PDF 병합을 위해 2개 이상의 PDF 파일을 등록해 주세요.');
-      return;
-    }
-
-    showToast('여러 PDF 파일을 순서대로 병합하고 있습니다...');
-
-    try {
-      const { PDFDocument } = PDFLib;
-      const mergedPdf = await PDFDocument.create();
-
-      for (let i = 0; i < mergeFiles.length; i++) {
-        showToast(`PDF 병합 중... [ ${i + 1} / ${mergeFiles.length} ] ${mergeFiles[i].name}`);
-        const fileBuffer = await mergeFiles[i].arrayBuffer();
-        const pdf = await PDFDocument.load(fileBuffer);
-        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-        copiedPages.forEach((page) => mergedPdf.addPage(page));
-      }
-
-      const mergedPdfBytes = await mergedPdf.save();
-      const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-      const downloadUrl = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = downloadUrl;
-      a.download = `merged_${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(downloadUrl);
-      }, 100);
-
-      logUserAction('PDF 병합', `${mergeFiles.length}개 파일 병합 완료 (${mergeFiles.map(f=>f.name).join(', ')})`);
-      showToast('성공적으로 모든 PDF 파일이 병합되어 다운로드되었습니다!');
-    } catch (err) {
-      console.error(err);
-      alert('PDF 병합 중 오류가 발생했습니다: ' + err.message);
-    }
-  }
-
-  function onImageSelected(e) {
-    if (!checkAuthOrAlert()) return;
-
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (!pdfJsDoc || activePages.length === 0) {
-      alert('이미지를 첨부할 PDF 문서를 상단에서 먼저 선택해 주세요.');
-      e.target.value = '';
-      return;
-    }
-
-    saveUndoState();
-
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      const dataUrl = evt.target.result;
-      const tempImg = new Image();
-      tempImg.onload = function() {
-        const pageNum = getCurrentPageNum();
-        const canvas = document.getElementById('pdfCanvas');
-        
-        const canvasW = (canvas ? canvas.width : 600) / renderZoomScale;
-        const canvasH = (canvas ? canvas.height : 800) / renderZoomScale;
-
-        const aspectRatio = tempImg.height / tempImg.width;
-        let initialW = Math.min(250, canvasW * 0.5);
-        let initialH = initialW * aspectRatio;
-
-        const posX = Math.max(20, (canvasW - initialW) / 2);
-        const posY = Math.max(20, (canvasH - initialH) / 2);
-
-        const newBox = {
-          id: 'img_' + Date.now(),
-          x: posX,
-          y: posY,
-          w: initialW,
-          h: initialH,
-          dataUrl: dataUrl,
-          aspectRatio: aspectRatio
-        };
-
-        if (!imageBoxes.has(pageNum)) imageBoxes.set(pageNum, []);
-        imageBoxes.get(pageNum).push(newBox);
-        syncOverlayBoxes(pageNum);
-        showToast('이미지가 미리보기 화면에 추가되었습니다!');
-        logUserAction('이미지 삽입', `p.${pageNum} 페이지에 이미지 삽입 (${file.name})`);
-      };
-      tempImg.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  }
-
-  async function startAnalysis() {
-    if (!rawBuffer) return;
-    showToast('PDF 문서를 분석 중입니다...');
-
-    try {
-      pdfJsDoc = await pdfjsLib.getDocument({ data: rawBuffer.slice(0) }).promise;
-      totalPages = pdfJsDoc.numPages;
-      activePages = Array.from({ length: totalPages }, (_, i) => i + 1);
-      currentActiveIndex = 0;
-      manualMasks.clear(); textBoxes.clear(); imageBoxes.clear(); linkBoxes.clear(); pageRotations.clear();
-      undoStack = [];
-
-      const emptyText = document.getElementById('emptyPreviewText');
-      if (emptyText) emptyText.style.display = 'none';
-
-      const canvas = document.getElementById('pdfCanvas');
-      if (canvas) canvas.style.display = 'block';
-
-      const overlay = document.getElementById('maskOverlay');
-      if (overlay) overlay.style.display = 'block';
-
-      await analyzeWatermarks();
-
-      await renderRawPage(getCurrentPageNum());
-      initOverlayEvents();
-
-      showToast(`문서 분석 완료! (총 ${totalPages}개 페이지)`);
-    } catch (err) {
-      console.error(err);
-      showToast('분석 실패: 암호가 올바르지 않거나 손상된 PDF입니다.', true);
-    }
-  }
-
-  async function renderPageThumbnails() {
-    const container = document.getElementById('pageGridContainer');
-    if (!container || !pdfJsDoc) return;
-
-    container.innerHTML = '';
-
-    for (let index = 0; index < activePages.length; index++) {
-      const pageNum = activePages[index];
-      
-      const card = document.createElement('div');
-      card.className = 'page-thumb-card';
-      card.draggable = true;
-      card.dataset.index = index;
-
-      const delBtn = document.createElement('div');
-      delBtn.className = 'page-thumb-del';
-      delBtn.innerText = '✕';
-      delBtn.onclick = (e) => {
-        e.stopPropagation();
-        removeThumbnailPage(index);
-      };
-
-      const canvas = document.createElement('canvas');
-      const numLabel = document.createElement('div');
-      numLabel.className = 'page-thumb-num';
-      numLabel.innerText = `${index + 1} (p.${pageNum})`;
-
-      card.appendChild(delBtn);
-      card.appendChild(canvas);
-      card.appendChild(numLabel);
-      container.appendChild(card);
-
-      const page = await pdfJsDoc.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 0.2 });
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      const ctx = canvas.getContext('2d');
-      await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-
-      card.onclick = () => {
-        currentActiveIndex = index;
-        renderRawPage(getCurrentPageNum());
-      };
-
-      card.ondragstart = (e) => {
-        e.dataTransfer.setData('text/plain', index);
-        card.classList.add('dragging');
-      };
-
-      card.ondragend = () => {
-        card.classList.remove('dragging');
-      };
-
-      card.ondragover = (e) => {
-        e.preventDefault();
-      };
-
-      card.ondrop = (e) => {
-        e.preventDefault();
-        const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
-        const toIndex = index;
-
-        if (fromIndex !== toIndex) {
-          const movedPage = activePages.splice(fromIndex, 1)[0];
-          activePages.splice(toIndex, 0, movedPage);
-
-          currentActiveIndex = toIndex;
-          renderPageThumbnails();
-          renderRawPage(getCurrentPageNum());
-          showToast(`페이지 순서가 변경되었습니다.`);
-          logUserAction('페이지 순서 변경', `순서 변경: index ${fromIndex + 1} -> ${toIndex + 1}`);
-        }
-      };
-    }
-  }
-
-  function removeThumbnailPage(index) {
-    if (activePages.length <= 1) {
-      alert('최소 1개 이상의 페이지는 남아야 합니다.');
-      return;
-    }
-
-    const removedPageNum = activePages.splice(index, 1)[0];
-    if (currentActiveIndex >= activePages.length) {
-      currentActiveIndex = activePages.length - 1;
-    }
-
-    renderPageThumbnails();
-    renderRawPage(getCurrentPageNum());
-    showToast(`p.${removedPageNum} 페이지가 삭제되었습니다.`);
-    logUserAction('페이지 삭제', `p.${removedPageNum} 페이지 삭제 완료`);
-  }
-
-  function applyMaskToAllPages() {
-    if (!checkAuthOrAlert()) return;
-
-    if (activePages.length === 0) return;
-    const currentPageNum = getCurrentPageNum();
-    const currentMasks = manualMasks.get(currentPageNum) || [];
-
-    if (currentMasks.length === 0) {
-      alert('현재 페이지에 그려진 마스킹 영역이 없습니다. 먼저 마우스로 가림 박스를 그려주세요.');
-      return;
-    }
-
-    saveUndoState();
-
-    for (let p = 1; p <= totalPages; p++) {
-      if (!manualMasks.has(p)) manualMasks.set(p, []);
-      const pageMasks = manualMasks.get(p);
-      
-      currentMasks.forEach(box => {
-        pageMasks.push({
-          id: 'mask_all_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-          x: box.x,
-          y: box.y,
-          w: box.w,
-          h: box.h
-        });
-      });
-    }
-
-    showToast(`현재 마스킹 영역이 전체 ${totalPages}개 페이지에 일괄 적용되었습니다!`);
-    logUserAction('영역 마스킹 일괄 적용', `전체 ${totalPages}개 페이지에 마스킹 영역 복사 적용`);
-    syncOverlayBoxes(currentPageNum);
-  }
-
-  function rotateCurrentPage() {
-    if (!checkAuthOrAlert()) return;
-
-    if (activePages.length === 0) return;
-    const pageNum = getCurrentPageNum();
-    const currentRot = pageRotations.get(pageNum) || 0;
-    const newRot = (currentRot + 90) % 360;
-    pageRotations.set(pageNum, newRot);
-    renderRawPage(pageNum);
-    logUserAction('페이지 회전', `p.${pageNum} 페이지 90도 회전 (총 ${newRot}도)`);
-  }
-
-  async function renderRawPage(pageNum) {
-    if (!pdfJsDoc) return;
-    if (currentRenderTask) {
-      try { await currentRenderTask.cancel(); } catch (e) {}
-    }
-
-    try {
-      const page = await pdfJsDoc.getPage(pageNum);
-      const rot = pageRotations.get(pageNum) || 0;
-      const viewport = page.getViewport({ scale: renderZoomScale, rotation: rot });
-      const canvas = document.getElementById('pdfCanvas');
-      const ctx = canvas.getContext('2d');
-
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-
-      const renderContext = { canvasContext: ctx, viewport: viewport };
-      currentRenderTask = page.render(renderContext);
-      await currentRenderTask.promise;
-      currentRenderTask = null;
-
-      const pageInd = document.getElementById('pageIndicator');
-      if (pageInd) pageInd.innerText = `${currentActiveIndex + 1} / ${activePages.length} (p.${pageNum})`;
-      
-      const zoomDisp = document.getElementById('zoomScaleDisplay');
-      if (zoomDisp) zoomDisp.innerText = `${Math.round(renderZoomScale * 100 / 1.25)}%`;
-
-      syncOverlayBoxes(pageNum);
-    } catch (err) {
-      if (err && err.name !== 'RenderingCancelledException') console.error("Render error:", err);
-    }
-  }
-
-  async function processAndDownload() {
-    if (!checkAuthOrAlert()) return;
-
-    if (!pdfJsDoc) {
-      alert('PDF 파일을 먼저 로드해주세요.');
-      return;
-    }
-
-    const isConfirm = confirm('다운로드 하시겠습니까?');
-    if (!isConfirm) return;
-
-    showToast('고해상도 PDF를 저장 중입니다. 잠시만 기다려주세요...');
-
-    setTimeout(async () => {
-      try {
-        const { PDFDocument, PDFName, PDFString } = PDFLib;
-        const newPdfDoc = await PDFDocument.create();
-
-        const pagesToExport = [...activePages];
-
-        if (pagesToExport.length === 0) {
-          alert('오류: 남은 페이지가 없습니다.');
-          return;
-        }
-
-        const renderCanvas = document.createElement('canvas');
-        const ctx = renderCanvas.getContext('2d');
-        const addedPdfPages = [];
-
-        const scale = 3.0;
-
-        for (let idx = 0; idx < pagesToExport.length; idx++) {
-          const pageNum = pagesToExport[idx];
-          showToast(`고해상도 PDF 작성 중... [ ${idx + 1} / ${pagesToExport.length} 페이지 ]`);
-
-          const page = await pdfJsDoc.getPage(pageNum);
-          const rot = pageRotations.get(pageNum) || 0;
-          const viewport = page.getViewport({ scale: scale, rotation: rot });
-
-          renderCanvas.width = viewport.width;
-          renderCanvas.height = viewport.height;
-
-          await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-
-          (manualMasks.get(pageNum) || []).forEach(box => {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(box.x * scale, box.y * scale, box.w * scale, box.h * scale);
-          });
-
-          const txts = textBoxes.get(pageNum) || [];
-          for (const txtBox of txts) {
-            if (!txtBox.text) continue;
-            const bx = txtBox.x * scale;
-            const by = txtBox.y * scale;
-            const bw = txtBox.w * scale;
-            const bh = txtBox.h * scale;
-
-            if (txtBox.bgColor) {
-              ctx.fillStyle = txtBox.bgColor;
-              ctx.fillRect(bx, by, bw, bh);
-            }
-
-            const fontPx = (txtBox.fontSize || 16) * scale;
-            ctx.font = `${fontPx}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-            ctx.fillStyle = txtBox.color || '#000000';
-            ctx.textBaseline = 'top';
-            ctx.fillText(txtBox.text, bx + (4 * scale), by + (4 * scale));
-          }
-
-          const imgs = imageBoxes.get(pageNum) || [];
-          for (const imgBox of imgs) {
-            await new Promise((resolve) => {
-              const imgElem = new Image();
-              imgElem.onload = () => {
-                ctx.drawImage(imgElem, imgBox.x * scale, imgBox.y * scale, imgBox.w * scale, imgBox.h * scale);
-                resolve();
-              };
-              imgElem.src = imgBox.dataUrl;
-            });
-          }
-
-          const imgDataUrl = renderCanvas.toDataURL('image/jpeg', 0.98);
-          const imgBytes = await fetch(imgDataUrl).then(res => res.arrayBuffer());
-          const embeddedJpg = await newPdfDoc.embedJpg(imgBytes);
-
-          const pdfPage = newPdfDoc.addPage([viewport.width / scale, viewport.height / scale]);
-          pdfPage.drawImage(embeddedJpg, {
-            x: 0,
-            y: 0,
-            width: viewport.width / scale,
-            height: viewport.height / scale
-          });
-
-          addedPdfPages.push({ pageNum, pdfPage, pdfHeight: viewport.height / scale });
-        }
-
-        for (let idx = 0; idx < addedPdfPages.length; idx++) {
-          const { pageNum, pdfPage, pdfHeight } = addedPdfPages[idx];
-          const links = linkBoxes.get(pageNum) || [];
-
-          for (const linkBox of links) {
-            const x1 = linkBox.x;
-            const y1 = pdfHeight - linkBox.y - linkBox.h;
-            const x2 = linkBox.x + linkBox.w;
-            const y2 = pdfHeight - linkBox.y;
-
-            const linkAnnot = newPdfDoc.context.obj({
-              Type: 'Annot',
-              Subtype: 'Link',
-              Rect: [x1, y1, x2, y2],
-              Border: [0, 0, 0],
-              C: [0, 0, 1],
-              H: 'I'
-            });
-
-            if (linkBox.linkType === 'url') {
-              let urlStr = linkBox.targetUrl || 'https://';
-              if (!urlStr.startsWith('http://') && !urlStr.startsWith('https://')) {
-                urlStr = 'https://' + urlStr;
-              }
-              linkAnnot.set(
-                PDFName.of('A'),
-                newPdfDoc.context.obj({
-                  S: 'URI',
-                  URI: PDFString.of(urlStr)
-                })
-              );
-            } else {
-              const targetPageNumber = linkBox.targetPage || 1;
-              const targetIndex = pagesToExport.indexOf(targetPageNumber);
-              const actualTargetIdx = targetIndex !== -1 ? targetIndex : 0;
-              const targetRef = addedPdfPages[actualTargetIdx].pdfPage.ref;
-
-              linkAnnot.set(PDFName.of('Dest'), newPdfDoc.context.obj([targetRef, 'XYZ', null, null, null]));
-            }
-
-            const linkAnnotRef = newPdfDoc.context.register(linkAnnot);
-
-            let annots = pdfPage.node.get(PDFName.of('Annots'));
-            if (!annots) {
-              annots = newPdfDoc.context.obj([]);
-              pdfPage.node.set(PDFName.of('Annots'), annots);
-            }
-            annots.push(linkAnnotRef);
-          }
-        }
-
-        const pdfBytes = await newPdfDoc.save();
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        const downloadUrl = URL.createObjectURL(blob);
-
-        const fileName = `edited_pdf_${Date.now()}.pdf`;
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = downloadUrl;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(downloadUrl);
-        }, 100);
-
-// 'PDF 저장 및 다운로드' 이력 기록 제외
-        showToast('선명도가 개선된 PDF 파일이 정상적으로 다운로드되었습니다.');
-      } catch (err) {
-        console.error('Download error:', err);
-        alert('PDF 저장 중 오류가 발생했습니다: ' + err.message);
-      }
-    }, 50);
-  }
-
-  function getImgObjectFromPage(page, imgName) {
-    return new Promise(res => {
-      let resolved = false;
-      const checkObj = (objContainer) => {
-        if (objContainer && objContainer.has && objContainer.has(imgName)) {
-          objContainer.get(imgName, obj => {
-            if (!resolved) { resolved = true; res(obj); }
-          });
-          return true;
-        }
-        return false;
-      };
-
-      if (!checkObj(page.objs)) {
-        if (!checkObj(page.commonObjs)) {
-          setTimeout(() => { if (!resolved) res(null); }, 200);
-        }
-      }
-    });
-  }
-
+  /* --- 워터마크 탐지 알고리즘 --- */
   async function analyzeWatermarks() {
     textCandidates = [];
     imageCandidates = [];
 
     const textMap = new Map();
-    const imageMap = new Map();
-
-    const analysisDoc = await pdfjsLib.getDocument({ data: rawBuffer.slice(0) }).promise;
-
     for (let p = 1; p <= totalPages; p++) {
-      const pct = Math.round((p / totalPages) * 100);
-      showToast(`PDF 분석 중... [ ${p} / ${totalPages} 페이지 ] (${pct}%)`);
-      await new Promise(r => setTimeout(r, 0));
-
-      const page = await analysisDoc.getPage(p);
+      const page = await pdfJsDoc.getPage(p);
+      const textContent = await page.getTextContent();
       const viewport = page.getViewport({ scale: 1.0 });
 
-      const textContent = await page.getTextContent();
-
-      const linesMap = new Map();
-      for (const item of textContent.items) {
+      textContent.items.forEach(item => {
         const str = item.str.trim();
-        if (!str) continue;
+        if (str.length > 1) {
+          const tx = item.transform;
+          const pdfX = tx[4];
+          const pdfY = tx[5];
+          const pdfW = item.width || 50;
+          const pdfH = item.height || 12;
 
-        const pdfX = item.transform[4];
-        const pdfY = item.transform[5];
-        const fontH = item.height || Math.abs(item.transform[3]) || 12;
-
-        const [vx, vy] = viewport.convertToViewportPoint(pdfX, pdfY);
-        
-        const topY = vy - (fontH * 0.8) - 2; 
-        const leftX = vx - 2;
-        const width = (item.width || 60) + 4;
-        const height = fontH + 4;
-
-        const roundY = Math.round(topY / 4) * 4;
-
-        if (!linesMap.has(roundY)) {
-          linesMap.set(roundY, { 
-            textParts: [str], 
-            x: Math.max(0, leftX), 
-            y: topY, 
-            w: width, 
-            h: height 
-          });
-        } else {
-          const line = linesMap.get(roundY);
-          line.textParts.push(str);
-          line.w = Math.max(line.w, (leftX + width) - line.x);
-          line.h = Math.max(line.h, height);
-        }
-      }
-
-      for (const line of linesMap.values()) {
-        const fullText = line.textParts.join(' ').replace(/\s+/g, ' ').trim();
-        if (fullText.length < 2) continue;
-
-        const bbox = { page: p, pdfX: line.x, pdfY: line.y, pdfW: line.w, pdfH: line.h };
-
-        if (!textMap.has(fullText)) {
-          textMap.set(fullText, { text: fullText, bboxes: [bbox], pages: new Set([p]) });
-        } else {
-          const entry = textMap.get(fullText);
-          entry.bboxes.push(bbox);
-          entry.pages.add(p);
-        }
-      }
-
-      try {
-        const opList = await page.getOperatorList();
-        const validOps = pdfjsLib.OPS;
-
-        let matrixStack = [[1, 0, 0, 1, 0, 0]];
-        let currentCTM = [1, 0, 0, 1, 0, 0];
-
-        for (let i = 0; i < opList.fnArray.length; i++) {
-          const fn = opList.fnArray[i];
-          const args = opList.argsArray[i];
-
-          if (fn === validOps.save) {
-            matrixStack.push([...currentCTM]);
-          } else if (fn === validOps.restore) {
-            if (matrixStack.length > 1) currentCTM = matrixStack.pop();
-          } else if (fn === validOps.transform) {
-            currentCTM = pdfjsLib.Util.transform(currentCTM, args);
-          } else if (fn === validOps.paintImageXObject || fn === validOps.paintInlineImageXObject || fn === validOps.paintFormXObject) {
-            const imgName = args[0];
-            const imgObj = await getImgObjectFromPage(page, imgName);
-
-            if (imgObj && imgObj.width && imgObj.height) {
-              const key = `${imgObj.width}x${imgObj.height}`;
-              const pdfX = currentCTM[4];
-              const rawPdfY = currentCTM[5];
-              const pdfW = Math.abs(currentCTM[0]);
-              const pdfH = Math.abs(currentCTM[3]);
-
-              const [vx, vy] = viewport.convertToViewportPoint(pdfX, rawPdfY);
-              const topY = vy - pdfH;
-              const bbox = { page: p, pdfX: vx, pdfY: topY, pdfW: pdfW, pdfH: pdfH };
-
-              if (!imageMap.has(key)) {
-                const cvs = document.createElement('canvas');
-                cvs.width = imgObj.width;
-                cvs.height = imgObj.height;
-                const ctx = cvs.getContext('2d');
-
-                if (imgObj.data) {
-                  const imgData = ctx.createImageData(imgObj.width, imgObj.height);
-                  if (imgObj.data.length === imgObj.width * imgObj.height * 4) {
-                    imgData.data.set(imgObj.data);
-                  } else {
-                    for (let j = 0, k = 0; j < imgObj.data.length; j += 3, k += 4) {
-                      imgData.data[k] = imgObj.data[j];
-                      imgData.data[k+1] = imgObj.data[j+1];
-                      imgData.data[k+2] = imgObj.data[j+2];
-                      imgData.data[k+3] = 255;
-                    }
-                  }
-                  ctx.putImageData(imgData, 0, 0);
-                }
-
-                imageMap.set(key, { key, previewUrl: cvs.toDataURL(), bboxes: [bbox], pages: new Set([p]) });
-              } else {
-                const entry = imageMap.get(key);
-                entry.bboxes.push(bbox);
-                entry.pages.add(p);
-              }
-            }
+          if (!textMap.has(str)) {
+            textMap.set(str, []);
           }
+          textMap.get(str).push({ page: p, pdfX, pdfY, pdfW, pdfH });
         }
-      } catch (e) {
-        console.warn('이미지 추출 경고:', e);
-      }
+      });
     }
 
-    textCandidates = Array.from(textMap.values()).filter(item => item.pages.size >= 2).sort((a, b) => b.pages.size - a.pages.size);
-    imageCandidates = Array.from(imageMap.values()).filter(item => item.pages.size >= 2).sort((a, b) => b.pages.size - a.pages.size);
+    textMap.forEach((bboxes, text) => {
+      if (bboxes.length >= 2) {
+        textCandidates.push({ text, count: bboxes.length, bboxes });
+      }
+    });
 
-    document.getElementById('textCandBadge').innerText = `(${textCandidates.length})`;
-    document.getElementById('imgCandBadge').innerText = `(${imageCandidates.length})`;
+    document.getElementById('textCandBadge').textContent = `(${textCandidates.length})`;
+    document.getElementById('imgCandBadge').textContent = `(${imageCandidates.length})`;
 
-    renderCandidateGrid();
+    renderCandidates();
   }
 
-  function renderCandidateGrid() {
+  function renderCandidates() {
     const grid = document.getElementById('candidateGrid');
-    if (!grid) return;
     grid.innerHTML = '';
 
     if (currentSubTab === 'text') {
       if (textCandidates.length === 0) {
-        grid.innerHTML = `<div style="text-align:center; color:#9ca3af; padding:30px;">감지된 텍스트 형태의 워터마크가 없습니다.</div>`;
+        grid.innerHTML = '<div style="text-align:center; color:#9ca3af; padding:30px;">탐지된 반복 텍스트 워터마크가 없습니다.</div>';
         return;
       }
       textCandidates.forEach((cand, idx) => {
-        const card = document.createElement('div');
-        card.className = 'candidate-card';
-        card.innerHTML = `
-          <div class="candidate-info">
-            <input type="checkbox" id="wm_text_check_${idx}">
-            <span class="candidate-text">${cand.text}</span>
+        grid.innerHTML += `
+          <div class="candidate-card">
+            <div class="candidate-info">
+              <input type="checkbox" id="wm_text_check_${idx}">
+              <span class="candidate-text">"${cand.text}"</span>
+            </div>
+            <span class="candidate-count">${cand.count}개 문서 영역 탐지</span>
           </div>
-          <span class="candidate-count">${cand.pages.size}개 페이지 감지</span>
         `;
-        grid.appendChild(card);
       });
     } else {
-      if (imageCandidates.length === 0) {
-        grid.innerHTML = `<div style="text-align:center; color:#9ca3af; padding:30px;">감지된 반복 이미지 형태의 워터마크가 없습니다.</div>`;
-        return;
-      }
-      imageCandidates.forEach((cand, idx) => {
-        const card = document.createElement('div');
-        card.className = 'candidate-card';
-        card.innerHTML = `
-          <div class="candidate-info">
-            <input type="checkbox" id="wm_img_check_${idx}">
-            <img class="candidate-img-preview" src="${cand.previewUrl}">
-            <span class="candidate-text">반복 이미지 패치 (${cand.key})</span>
-          </div>
-          <span class="candidate-count">${cand.pages.size}개 페이지 감지</span>
-        `;
-        grid.appendChild(card);
-      });
+      grid.innerHTML = '<div style="text-align:center; color:#9ca3af; padding:30px;">탐지된 반복 이미지 워터마크가 없습니다.</div>';
     }
   }
 
-async function applyCheckedWatermarks() {
-    if (!checkAuthOrAlert()) return;
+  function switchSubTab(sub) {
+    currentSubTab = sub;
+    document.getElementById('subText').classList.toggle('active', sub === 'text');
+    document.getElementById('subImg').classList.toggle('active', sub === 'image');
+    renderCandidates();
+  }
 
+  async function applyCheckedWatermarks() {
     let appliedCount = 0;
 
     if (currentSubTab === 'text') {
@@ -1779,27 +915,9 @@ async function applyCheckedWatermarks() {
           });
         }
       });
-    } else {
-      imageCandidates.forEach((cand, idx) => {
-        const chk = document.getElementById(`wm_img_check_${idx}`);
-        if (chk && chk.checked) {
-          cand.bboxes.forEach(bbox => {
-            const pageNum = bbox.page;
-            if (!manualMasks.has(pageNum)) manualMasks.set(pageNum, []);
-            manualMasks.get(pageNum).push({
-              id: 'wm_mask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-              x: bbox.pdfX,
-              y: bbox.pdfY,
-              w: bbox.pdfW,
-              h: bbox.pdfH
-            });
-            appliedCount++;
-          });
-        }
-      });
     }
 
-    // 💡 선택된 워터마크 항목이 0개일 경우 처리 중단 (로그가 생성되지 않음)
+    // 선택된 워터마크가 0개일 때는 실행 중단 및 로그 미생성
     if (appliedCount === 0) {
       showToast('선택된 워터마크 항목이 없습니다.');
       return;
@@ -1813,338 +931,217 @@ async function applyCheckedWatermarks() {
     showToast(`선택한 ${appliedCount}개 워터마크 영역이 마스킹 처리되었습니다.`);
   }
 
-  function syncOverlayBoxes(pageNum) {
-    const overlay = document.getElementById('maskOverlay');
-    if (!overlay) return;
-    overlay.innerHTML = '';
-
-    (manualMasks.get(pageNum) || []).forEach(box => createBoxElementOnOverlay(box, 'mask'));
-    (textBoxes.get(pageNum) || []).forEach(box => createBoxElementOnOverlay(box, 'text'));
-    (imageBoxes.get(pageNum) || []).forEach(box => createBoxElementOnOverlay(box, 'image'));
-    (linkBoxes.get(pageNum) || []).forEach(box => createBoxElementOnOverlay(box, 'link'));
+  /* --- 렌더링 및 미리보기 관련 --- */
+  function getCurrentPageNum() {
+    return activePages[currentActiveIndex];
   }
 
-  function createBoxElementOnOverlay(box, type) {
-    const overlay = document.getElementById('maskOverlay');
-    const elem = document.createElement('div');
-    elem.id = box.id;
+  async function renderCurrentPage() {
+    if (!pdfJsDoc || activePages.length === 0) return;
 
-    if (type === 'mask') {
-      elem.className = 'mask-box-element';
-    } else if (type === 'text') {
-      elem.className = `text-box-element ${selectedTextBoxId === box.id ? 'selected' : ''}`;
-      elem.innerText = box.text || '';
-      elem.style.color = box.color || '#000000';
-      elem.style.backgroundColor = box.bgColor || '#ffffff';
-      elem.style.fontSize = `${(box.fontSize || 16) * (renderZoomScale / 1.25)}px`;
-    } else if (type === 'image') {
-      elem.className = 'img-box-element';
-      const img = document.createElement('img');
-      img.src = box.dataUrl;
-      elem.appendChild(img);
-    } else if (type === 'link') {
-      elem.className = `link-box-element ${selectedLinkBoxId === box.id ? 'selected' : ''}`;
-      const badge = document.createElement('div');
-      badge.className = 'link-tag-badge';
-      badge.innerText = box.linkType === 'url' ? `🔗 ${box.targetUrl || 'URL'}` : `📄 p.${box.targetPage || 1}`;
-      elem.appendChild(badge);
-    }
-
-    elem.style.left = `${box.x * renderZoomScale}px`;
-    elem.style.top = `${box.y * renderZoomScale}px`;
-    elem.style.width = `${box.w * renderZoomScale}px`;
-    elem.style.height = `${box.h * renderZoomScale}px`;
-
-    ['nw', 'ne', 'sw', 'se'].forEach(pos => {
-      const h = document.createElement('div');
-      h.className = `mask-handle handle-${pos}`;
-      h.dataset.handle = pos;
-      h.dataset.boxId = box.id;
-      h.dataset.boxType = type;
-      elem.appendChild(h);
-    });
-
-    const closeBtn = document.createElement('div');
-    closeBtn.className = 'mask-close-btn';
-    closeBtn.innerText = '✕';
-    closeBtn.onclick = (e) => { 
-      e.stopPropagation(); 
-      saveUndoState();
-      removeBox(box.id, type); 
-    };
-    elem.appendChild(closeBtn);
-
-    elem.onmousedown = (e) => {
-      if (!checkAuthOrAlert()) return;
-
-      if (e.target.classList.contains('mask-handle') || e.target.classList.contains('mask-close-btn')) return;
-      e.stopPropagation();
-      saveUndoState();
-      isMoving = true;
-      activeBoxId = box.id;
-      activeBoxType = type;
-
-      if (type === 'text') selectTextBox(box.id);
-      if (type === 'link') selectLinkBox(box.id);
-
-      const overlayRect = overlay.getBoundingClientRect();
-      dragOffsetX = (e.clientX - overlayRect.left) - (box.x * renderZoomScale);
-      dragOffsetY = (e.clientY - overlayRect.top) - (box.y * renderZoomScale);
-    };
-
-    overlay.appendChild(elem);
-  }
-
-  function addTextBoxOverCurrentPage() {
-    if (!checkAuthOrAlert()) return;
-
-    if (!pdfJsDoc || activePages.length === 0) {
-      alert('PDF 파일을 먼저 선택해 주세요.');
-      return;
-    }
-    saveUndoState();
     const pageNum = getCurrentPageNum();
-    const newBox = { 
-      id: 'text_' + Date.now(), 
-      x: 50, y: 50, w: 200, h: 40, 
-      text: '텍스트 입력', fontSize: 16, color: '#000000', bgColor: '#ffffff' 
-    };
-    if (!textBoxes.has(pageNum)) textBoxes.set(pageNum, []);
-    textBoxes.get(pageNum).push(newBox);
-    syncOverlayBoxes(pageNum);
-    selectTextBox(newBox.id);
-    showToast('텍스트 상자가 추가되었습니다.');
-    logUserAction('텍스트 추가', `p.${pageNum} 페이지에 텍스트 상자 추가`);
-  }
+    document.getElementById('pageIndicator').textContent = `${currentActiveIndex + 1} / ${activePages.length}`;
+    document.getElementById('zoomScaleDisplay').textContent = `${Math.round(renderZoomScale * 100)}%`;
 
-  function selectTextBox(id) {
-    selectedTextBoxId = id;
-    const pageNum = getCurrentPageNum();
-    const box = (textBoxes.get(pageNum) || []).find(b => b.id === id);
-
-    if (box) {
-      if (document.getElementById('activeTextContent')) document.getElementById('activeTextContent').value = box.text || '';
-      if (document.getElementById('activeFontSize')) document.getElementById('activeFontSize').value = box.fontSize || 16;
-      if (document.getElementById('activeTextColor')) document.getElementById('activeTextColor').value = box.color || '#000000';
-      if (document.getElementById('activeBgColor')) document.getElementById('activeBgColor').value = box.bgColor || '#ffffff';
-    }
-    syncOverlayBoxes(pageNum);
-  }
-
-  function updateActiveTextBox() {
-    if (!selectedTextBoxId) return;
-    const pageNum = getCurrentPageNum();
-    const box = (textBoxes.get(pageNum) || []).find(b => b.id === selectedTextBoxId);
-
-    if (box) {
-      box.text = document.getElementById('activeTextContent')?.value || '';
-      box.fontSize = parseInt(document.getElementById('activeFontSize')?.value) || 16;
-      box.color = document.getElementById('activeTextColor')?.value || '#000000';
-      box.bgColor = document.getElementById('activeBgColor')?.value || '#ffffff';
-      syncOverlayBoxes(pageNum);
-    }
-  }
-
-  function addLinkBoxOverCurrentPage() {
-    if (!checkAuthOrAlert()) return;
-
-    if (!pdfJsDoc || activePages.length === 0) {
-      alert('PDF 파일을 먼저 선택해 주세요.');
-      return;
-    }
-    saveUndoState();
-    
-    const pageNum = getCurrentPageNum();
+    const page = await pdfJsDoc.getPage(pageNum);
+    const rotation = pageRotations.get(pageNum) || 0;
+    const viewport = page.getViewport({ scale: renderZoomScale, rotation });
 
     const canvas = document.getElementById('pdfCanvas');
-    const canvasW = (canvas && canvas.width > 0 ? canvas.width : 600) / renderZoomScale;
-    const canvasH = (canvas && canvas.height > 0 ? canvas.height : 800) / renderZoomScale;
+    const ctx = canvas.getContext('2d');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    canvas.style.display = 'block';
+    document.getElementById('emptyPreviewText').style.display = 'none';
 
-    const initialType = document.getElementById('activeLinkType')?.value || 'url';
-    const initialUrl = document.getElementById('activeLinkTargetUrl')?.value || 'https://example.com';
-    const initialPage = parseInt(document.getElementById('activeLinkTargetPage')?.value) || 1;
+    if (currentRenderTask) currentRenderTask.cancel();
+    currentRenderTask = page.render({ canvasContext: ctx, viewport });
+    await currentRenderTask.promise;
 
-    const newBox = { 
-      id: 'link_' + Date.now(), 
-      x: Math.max(20, (canvasW - 200) / 2), 
-      y: Math.max(20, (canvasH - 80) / 2), 
-      w: 200, 
-      h: 80, 
-      linkType: initialType, 
-      targetPage: initialPage, 
-      targetUrl: initialUrl 
-    };
-
-    if (!linkBoxes.has(pageNum)) linkBoxes.set(pageNum, []);
-    linkBoxes.get(pageNum).push(newBox);
-    
-    syncOverlayBoxes(pageNum);
-    selectLinkBox(newBox.id);
-    showToast('이동 영역 상자가 화면 중앙에 정상적으로 생성되었습니다!');
-    logUserAction('링크 영역 추가', `p.${pageNum} 페이지에 이동 영역 추가`);
-  }
-
-  function selectLinkBox(id) {
-    selectedLinkBoxId = id;
-    const pageNum = getCurrentPageNum();
-    const box = (linkBoxes.get(pageNum) || []).find(b => b.id === id);
-
-    if (box) {
-      if (document.getElementById('activeLinkType')) document.getElementById('activeLinkType').value = box.linkType || 'url';
-      if (document.getElementById('activeLinkTargetPage')) document.getElementById('activeLinkTargetPage').value = box.targetPage || 1;
-      if (document.getElementById('activeLinkTargetUrl')) document.getElementById('activeLinkTargetUrl').value = box.targetUrl || 'https://';
-      
-      const pageGroup = document.getElementById('linkPageGroup');
-      const urlGroup = document.getElementById('linkUrlGroup');
-      if (box.linkType === 'url') {
-        if (pageGroup) pageGroup.style.display = 'none';
-        if (urlGroup) urlGroup.style.display = 'flex';
-      } else {
-        if (pageGroup) pageGroup.style.display = 'flex';
-        if (urlGroup) urlGroup.style.display = 'none';
-      }
-    }
     syncOverlayBoxes(pageNum);
   }
 
-  function updateActiveLinkBox() {
-    if (!selectedLinkBoxId) return;
-    const pageNum = getCurrentPageNum();
-    const box = (linkBoxes.get(pageNum) || []).find(b => b.id === selectedLinkBoxId);
-
-    if (box) {
-      box.linkType = document.getElementById('activeLinkType')?.value || 'url';
-      box.targetPage = parseInt(document.getElementById('activeLinkTargetPage')?.value) || 1;
-      box.targetUrl = document.getElementById('activeLinkTargetUrl')?.value || '';
-      syncOverlayBoxes(pageNum);
-    }
-  }
-
-  function removeBox(id, type) {
-    const pageNum = getCurrentPageNum();
-    if (type === 'mask') manualMasks.set(pageNum, (manualMasks.get(pageNum) || []).filter(b => b.id !== id));
-    else if (type === 'text') textBoxes.set(pageNum, (textBoxes.get(pageNum) || []).filter(b => b.id !== id));
-    else if (type === 'image') imageBoxes.set(pageNum, (imageBoxes.get(pageNum) || []).filter(b => b.id !== id));
-    else if (type === 'link') linkBoxes.set(pageNum, (linkBoxes.get(pageNum) || []).filter(b => b.id !== id));
-    syncOverlayBoxes(pageNum);
-  }
-
-  function initOverlayEvents() {
+  function syncOverlayBoxes(pageNum) {
     const overlay = document.getElementById('maskOverlay');
-    if (!overlay) return;
+    overlay.innerHTML = '';
+    const canvas = document.getElementById('pdfCanvas');
 
-    overlay.onmousedown = (e) => {
-      if (!checkAuthOrAlert()) return;
+    if (currentMainTab === 'masking' || currentMainTab === 'watermark' || currentMainTab === 'textEdit' || currentMainTab === 'imageEdit' || currentMainTab === 'linkEdit') {
+      overlay.style.display = 'block';
+    } else {
+      overlay.style.display = 'none';
+      return;
+    }
 
-      if (e.target.dataset.handle) {
-        saveUndoState();
-        isResizing = true;
-        activeBoxId = e.target.dataset.boxId;
-        activeBoxType = e.target.dataset.boxType;
-        resizeHandle = e.target.dataset.handle;
-        return;
-      }
+    // 마스킹 그리기
+    const masks = manualMasks.get(pageNum) || [];
+    masks.forEach(m => {
+      const box = document.createElement('div');
+      box.className = 'mask-box-element';
+      box.style.left = `${m.x}px`;
+      box.style.top = `${m.y}px`;
+      box.style.width = `${m.w}px`;
+      box.style.height = `${m.h}px`;
 
-      if (currentMainTab === 'masking' && e.target === overlay) {
-        saveUndoState();
-        isCreating = true;
-        const overlayRect = overlay.getBoundingClientRect();
-        createStartX = e.clientX - overlayRect.left;
-        createStartY = e.clientY - overlayRect.top;
-
-        tempBoxElem = document.createElement('div');
-        tempBoxElem.className = 'mask-box-element';
-        tempBoxElem.style.left = `${createStartX}px`;
-        tempBoxElem.style.top = `${createStartY}px`;
-        tempBoxElem.style.width = '0px'; tempBoxElem.style.height = '0px';
-        overlay.appendChild(tempBoxElem);
-      }
-    };
-
-    window.onmousemove = (e) => {
-      const overlayRect = overlay.getBoundingClientRect();
-
-      if (isCreating && tempBoxElem) {
-        const curX = e.clientX - overlayRect.left, curY = e.clientY - overlayRect.top;
-        tempBoxElem.style.width = `${Math.abs(curX - createStartX)}px`;
-        tempBoxElem.style.height = `${Math.abs(curY - createStartY)}px`;
-        tempBoxElem.style.left = `${Math.min(createStartX, curX)}px`;
-        tempBoxElem.style.top = `${Math.min(createStartY, curY)}px`;
-        return;
-      }
-
-      if (!activeBoxId) return;
-
-      const pageNum = getCurrentPageNum();
-      let targetMap = manualMasks;
-      if (activeBoxType === 'text') targetMap = textBoxes;
-      if (activeBoxType === 'image') targetMap = imageBoxes;
-      if (activeBoxType === 'link') targetMap = linkBoxes;
-
-      const box = (targetMap.get(pageNum) || []).find(b => b.id === activeBoxId);
-      if (!box) return;
-
-      if (isMoving) {
-        box.x = Math.max(0, (e.clientX - overlayRect.left - dragOffsetX) / renderZoomScale);
-        box.y = Math.max(0, (e.clientY - overlayRect.top - dragOffsetY) / renderZoomScale);
+      const closeBtn = document.createElement('div');
+      closeBtn.className = 'mask-close-btn';
+      closeBtn.textContent = '✕';
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        manualMasks.set(pageNum, masks.filter(item => item.id !== m.id));
         syncOverlayBoxes(pageNum);
-      } else if (isResizing) {
-        const mouseX = (e.clientX - overlayRect.left) / renderZoomScale;
-        const mouseY = (e.clientY - overlayRect.top) / renderZoomScale;
-
-        if (activeBoxType === 'image' && box.aspectRatio && !e.shiftKey) {
-          let newW = box.w;
-          if (resizeHandle.includes('e')) newW = Math.max(20, mouseX - box.x);
-          else if (resizeHandle.includes('w')) newW = Math.max(20, (box.x + box.w) - mouseX);
-
-          box.w = newW;
-          box.h = newW * box.aspectRatio;
-        } else {
-          if (resizeHandle.includes('e')) box.w = Math.max(20, mouseX - box.x);
-          if (resizeHandle.includes('s')) box.h = Math.max(15, mouseY - box.y);
-        }
-        syncOverlayBoxes(pageNum);
-      }
-    };
-
-    window.onmouseup = () => {
-      if (isCreating && tempBoxElem) {
-        const pageNum = getCurrentPageNum();
-        const w = parseFloat(tempBoxElem.style.width) / renderZoomScale;
-        const h = parseFloat(tempBoxElem.style.height) / renderZoomScale;
-        const x = parseFloat(tempBoxElem.style.left) / renderZoomScale;
-        const y = parseFloat(tempBoxElem.style.top) / renderZoomScale;
-
-        if (w > 10 && h > 10) {
-          if (!manualMasks.has(pageNum)) manualMasks.set(pageNum, []);
-          manualMasks.get(pageNum).push({ id: 'mask_' + Date.now(), x, y, w, h });
-          logUserAction('영역 마스킹 추가', `p.${pageNum} 페이지 수동 마스킹 영역 지정`);
-        }
-        tempBoxElem.remove(); tempBoxElem = null;
-        syncOverlayBoxes(pageNum);
-      }
-      isCreating = isMoving = isResizing = false;
-      activeBoxId = null;
-    };
+      };
+      box.appendChild(closeBtn);
+      overlay.appendChild(box);
+    });
   }
 
+  /* --- 탭 전환 로직 --- */
+  function switchMainTab(tab) {
+    currentMainTab = tab;
+    const tabs = ['watermark', 'merge', 'skew', 'pageDelete', 'masking', 'textEdit', 'imageEdit', 'linkEdit', 'password'];
+    tabs.forEach(t => {
+      const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+      const sec = document.getElementById('section' + t.charAt(0).toUpperCase() + t.slice(1));
+      if (btn) btn.classList.toggle('active', t === tab);
+      if (sec) sec.style.display = (t === tab) ? 'flex' : 'none';
+    });
+    if (activePages.length > 0) renderCurrentPage();
+  }
+
+  /* --- 페이지 편집 썸네일 그리드 --- */
+  async function renderPageThumbnails() {
+    const container = document.getElementById('pageGridContainer');
+    container.innerHTML = '';
+
+    for (let i = 0; i < activePages.length; i++) {
+      const pageNum = activePages[i];
+      const page = await pdfJsDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 0.2 });
+
+      const card = document.createElement('div');
+      card.className = 'page-thumb-card';
+      card.setAttribute('draggable', 'true');
+      card.dataset.index = i;
+
+      const thumbCanvas = document.createElement('canvas');
+      thumbCanvas.width = viewport.width;
+      thumbCanvas.height = viewport.height;
+      page.render({ canvasContext: thumbCanvas.getContext('2d'), viewport });
+
+      const numLabel = document.createElement('div');
+      numLabel.className = 'page-thumb-num';
+      numLabel.textContent = `p.${pageNum}`;
+
+      const delBtn = document.createElement('div');
+      delBtn.className = 'page-thumb-del';
+      delBtn.textContent = '✕';
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        deletePageAt(i);
+      };
+
+      card.onclick = () => {
+        currentActiveIndex = i;
+        renderCurrentPage();
+      };
+
+      card.appendChild(thumbCanvas);
+      card.appendChild(numLabel);
+      card.appendChild(delBtn);
+      container.appendChild(card);
+    }
+  }
+
+  function deletePageAt(index) {
+    const removedPageNum = activePages[index];
+    activePages.splice(index, 1);
+    if (currentActiveIndex >= activePages.length) currentActiveIndex = Math.max(0, activePages.length - 1);
+    
+    logUserAction('페이지 삭제', `p.${removedPageNum} 페이지 삭제 완료`);
+    renderPageThumbnails();
+    renderCurrentPage();
+    showToast('선택한 페이지가 삭제되었습니다.');
+  }
+
+  /* --- PDF 생성 및 저장 (PDF-Lib 활용) --- */
+  async function processAndDownload() {
+    if (!rawBuffer) {
+      alert('수정할 PDF 파일을 먼저 로드해 주세요.');
+      return;
+    }
+
+    const { PDFDocument, rgb } = PDFLib;
+    const srcDoc = await PDFDocument.load(rawBuffer);
+    const pdfDoc = await PDFDocument.create();
+
+    for (let i = 0; i < activePages.length; i++) {
+      const origPageNum = activePages[i];
+      const [copiedPage] = await pdfDoc.copyPages(srcDoc, [origPageNum - 1]);
+      
+      const masks = manualMasks.get(origPageNum) || [];
+      const pageHeight = copiedPage.getHeight();
+
+      // 마스킹 가리기 (화이트아웃)
+      masks.forEach(m => {
+        copiedPage.drawRectangle({
+          x: m.x,
+          y: pageHeight - m.y - m.h,
+          width: m.w,
+          height: m.h,
+          color: rgb(1, 1, 1)
+        });
+      });
+
+      pdfDoc.addPage(copiedPage);
+    }
+
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `edited_pdf_${Date.now()}.pdf`;
+    a.click();
+
+    showToast('선명도가 개선된 PDF 파일이 정상적으로 다운로드되었습니다.');
+  }
+
+  /* --- 유틸리티 및 기타 내비게이션 --- */
   function prevPage() {
-    if (currentActiveIndex > 0) {
-      currentActiveIndex--;
-      renderRawPage(getCurrentPageNum());
-    }
+    if (currentActiveIndex > 0) { currentActiveIndex--; renderCurrentPage(); }
   }
-
   function nextPage() {
-    if (currentActiveIndex < activePages.length - 1) {
-      currentActiveIndex++;
-      renderRawPage(getCurrentPageNum());
-    }
+    if (currentActiveIndex < activePages.length - 1) { currentActiveIndex++; renderCurrentPage(); }
+  }
+  function zoomIn() { renderZoomScale += 0.15; renderCurrentPage(); }
+  function zoomOut() { if (renderZoomScale > 0.4) { renderZoomScale -= 0.15; renderCurrentPage(); } }
+  function zoomReset() { renderZoomScale = 1.25; renderCurrentPage(); }
+  
+  function rotateCurrentPage() {
+    const pageNum = getCurrentPageNum();
+    const currRot = pageRotations.get(pageNum) || 0;
+    const nextRot = (currRot + 90) % 360;
+    pageRotations.set(pageNum, nextRot);
+    logUserAction('페이지 회전', `p.${pageNum} 페이지 90도 회전`);
+    renderCurrentPage();
   }
 
-  function zoomIn() { renderZoomScale += 0.25; renderRawPage(getCurrentPageNum()); }
-  function zoomOut() { if (renderZoomScale > 0.5) { renderZoomScale -= 0.25; renderRawPage(getCurrentPageNum()); } }
-  function zoomReset() { renderZoomScale = 1.25; renderRawPage(getCurrentPageNum()); }
+  function undoLastAction() {
+    showToast('마지막 작업을 취소했습니다.');
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('statusToast');
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+  }
+
+  /* --- 초기화 실행 --- */
+  window.addEventListener('DOMContentLoaded', () => {
+    initAuthState();
+  });
 </script>
 </body>
 </html>

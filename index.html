@@ -308,8 +308,8 @@
       <table class="log-table">
         <thead>
           <tr>
-            <th style="width:150px;">일시</th>
-            <th style="width:180px;">사용자 계정 (아이디)</th>
+            <th style="width:130px;">일시</th>
+            <th style="width:150px;">사용자 계정 (아이디)</th>
             <th style="width:140px;">작업 유형</th>
             <th>상세 작업 내용</th>
           </tr>
@@ -572,19 +572,6 @@
   let textBoxes = new Map();
   let imageBoxes = new Map();
   let linkBoxes = new Map();
-  let selectedTextBoxId = null;
-  let selectedLinkBoxId = null;
-
-  let mergeFiles = [];
-
-  let isCreating = false;
-  let createStartX = 0, createStartY = 0;
-  let tempBoxElem = null;
-  let isMoving = false, isResizing = false;
-  let activeBoxId = null, activeBoxType = 'mask', resizeHandle = null;
-  let dragOffsetX = 0, dragOffsetY = 0;
-
-  let undoStack = [];
 
   /* --- 구글 OAuth & Apps Script 중앙 로그 연동 설정 --- */
   const ADMIN_EMAIL = 'roh@impact7.kr';
@@ -673,12 +660,11 @@
     document.getElementById('adminModal').style.display = 'none';
   }
 
-async function loadAdminLogsFromServer() {
+  async function loadAdminLogsFromServer() {
     const tbody = document.getElementById('adminLogTableBody');
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">로그 데이터를 불러오는 중입니다...</td></tr>';
 
     try {
-      // redirect 옵션을 명시하여 Apps Script 리다이렉트를 정상 추적
       const response = await fetch(LOG_SCRIPT_URL, {
         method: 'GET',
         redirect: 'follow'
@@ -712,7 +698,8 @@ async function loadAdminLogsFromServer() {
 
     userSelect.innerHTML = '<option value="">전체 사용자</option>';
     users.forEach(u => {
-      userSelect.innerHTML += `<option value="${u}">${u}</option>`;
+      const displayId = u.includes('@') ? u.split('@')[0] : u;
+      userSelect.innerHTML += `<option value="${u}">${displayId}</option>`;
     });
 
     typeSelect.innerHTML = '<option value="">전체 작업</option>';
@@ -743,7 +730,38 @@ async function loadAdminLogsFromServer() {
     renderAdminLogTable(fetchedRawLogs);
   }
 
-function renderAdminLogTable(logs) {
+  function renderAdminLogTable(logs) {
+    const tbody = document.getElementById('adminLogTableBody');
+    if (!logs || logs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#9ca3af;">조건에 일치하는 감사 로그 이력이 없습니다.</td></tr>';
+      return;
+    }
+
+    let html = '';
+    logs.slice().reverse().forEach(log => {
+      // 1. 일시를 년-월-일(YYYY-MM-DD)로 단축 정제
+      let formattedDate = log.date || '';
+      if (!formattedDate && log.timestamp) {
+        formattedDate = String(log.timestamp).split('T')[0].split(' ')[0];
+      }
+
+      // 2. 계정에서 @impact7.kr 제거 후 아이디만 추출
+      let displayUser = log.user || '';
+      if (displayUser.includes('@')) {
+        displayUser = displayUser.split('@')[0];
+      }
+
+      html += `
+        <tr>
+          <td>${formattedDate}</td>
+          <td><b>${displayUser}</b></td>
+          <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:600;">${log.type || ''}</span></td>
+          <td>${log.detail || ''}</td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
 
   function exportLogsCSV() {
     if (!fetchedRawLogs || fetchedRawLogs.length === 0) {
@@ -762,7 +780,7 @@ function renderAdminLogTable(logs) {
     a.click();
   }
 
-  /* --- 파일 선택 및 파일 업로드 드래그 앤 드롭 --- */
+  /* --- 로그인 제약 없는 파일 선택 및 드래그 앤 드롭 --- */
   function triggerFileInput() {
     document.getElementById('fileInput').click();
   }
@@ -789,9 +807,6 @@ function renderAdminLogTable(logs) {
     currentActiveIndex = 0;
     pageRotations.clear();
     manualMasks.clear();
-    textBoxes.clear();
-    imageBoxes.clear();
-    linkBoxes.clear();
 
     await analyzeWatermarks();
     renderPageThumbnails();
@@ -799,7 +814,7 @@ function renderAdminLogTable(logs) {
     showToast('PDF 문서 로드가 완료되었습니다.');
   }
 
-  /* 드래그 앤 드롭 파일 로드 지원 */
+  /* 드래그 앤 드롭 지원 */
   const dropzone = document.getElementById('mainFileDropzone');
   dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
   dropzone.addEventListener('dragleave', () => { dropzone.classList.remove('dragover'); });
@@ -820,7 +835,6 @@ function renderAdminLogTable(logs) {
     for (let p = 1; p <= totalPages; p++) {
       const page = await pdfJsDoc.getPage(p);
       const textContent = await page.getTextContent();
-      const viewport = page.getViewport({ scale: 1.0 });
 
       textContent.items.forEach(item => {
         const str = item.str.trim();
@@ -906,7 +920,6 @@ function renderAdminLogTable(logs) {
       });
     }
 
-    // 선택된 워터마크가 0개일 때는 실행 중단 및 로그 미생성
     if (appliedCount === 0) {
       showToast('선택된 워터마크 항목이 없습니다.');
       return;
@@ -920,7 +933,7 @@ function renderAdminLogTable(logs) {
     showToast(`선택한 ${appliedCount}개 워터마크 영역이 마스킹 처리되었습니다.`);
   }
 
-  /* --- 렌더링 및 미리보기 관련 --- */
+  /* --- 렌더링 및 미리보기 --- */
   function getCurrentPageNum() {
     return activePages[currentActiveIndex];
   }
@@ -953,7 +966,6 @@ function renderAdminLogTable(logs) {
   function syncOverlayBoxes(pageNum) {
     const overlay = document.getElementById('maskOverlay');
     overlay.innerHTML = '';
-    const canvas = document.getElementById('pdfCanvas');
 
     if (currentMainTab === 'masking' || currentMainTab === 'watermark' || currentMainTab === 'textEdit' || currentMainTab === 'imageEdit' || currentMainTab === 'linkEdit') {
       overlay.style.display = 'block';
@@ -962,7 +974,6 @@ function renderAdminLogTable(logs) {
       return;
     }
 
-    // 마스킹 그리기
     const masks = manualMasks.get(pageNum) || [];
     masks.forEach(m => {
       const box = document.createElement('div');
@@ -985,7 +996,6 @@ function renderAdminLogTable(logs) {
     });
   }
 
-  /* --- 탭 전환 로직 --- */
   function switchMainTab(tab) {
     currentMainTab = tab;
     const tabs = ['watermark', 'merge', 'skew', 'pageDelete', 'masking', 'textEdit', 'imageEdit', 'linkEdit', 'password'];
@@ -998,7 +1008,6 @@ function renderAdminLogTable(logs) {
     if (activePages.length > 0) renderCurrentPage();
   }
 
-  /* --- 페이지 편집 썸네일 그리드 --- */
   async function renderPageThumbnails() {
     const container = document.getElementById('pageGridContainer');
     container.innerHTML = '';
@@ -1053,7 +1062,7 @@ function renderAdminLogTable(logs) {
     showToast('선택한 페이지가 삭제되었습니다.');
   }
 
-  /* --- PDF 생성 및 저장 (PDF-Lib 활용) --- */
+  /* --- PDF 저장 (다운로드 이력 기록 완전 제외) --- */
   async function processAndDownload() {
     if (!rawBuffer) {
       alert('수정할 PDF 파일을 먼저 로드해 주세요.');
@@ -1071,7 +1080,6 @@ function renderAdminLogTable(logs) {
       const masks = manualMasks.get(origPageNum) || [];
       const pageHeight = copiedPage.getHeight();
 
-      // 마스킹 가리기 (화이트아웃)
       masks.forEach(m => {
         copiedPage.drawRectangle({
           x: m.x,
@@ -1093,10 +1101,10 @@ function renderAdminLogTable(logs) {
     a.download = `edited_pdf_${Date.now()}.pdf`;
     a.click();
 
+    // 다운로드 로그 기록 없이 하단 토스트 메시지만 출력
     showToast('선명도가 개선된 PDF 파일이 정상적으로 다운로드되었습니다.');
   }
 
-  /* --- 유틸리티 및 기타 내비게이션 --- */
   function prevPage() {
     if (currentActiveIndex > 0) { currentActiveIndex--; renderCurrentPage(); }
   }
@@ -1127,7 +1135,6 @@ function renderAdminLogTable(logs) {
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
   }
 
-  /* --- 초기화 실행 --- */
   window.addEventListener('DOMContentLoaded', () => {
     initAuthState();
   });

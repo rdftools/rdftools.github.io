@@ -673,19 +673,27 @@
     document.getElementById('adminModal').style.display = 'none';
   }
 
-  async function loadAdminLogsFromServer() {
+async function loadAdminLogsFromServer() {
     const tbody = document.getElementById('adminLogTableBody');
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">로그 데이터를 불러오는 중입니다...</td></tr>';
 
     try {
-      // GET 방식을 사용하여 doGet 통신 실행
-      const response = await fetch(LOG_SCRIPT_URL);
+      // redirect 옵션을 명시하여 Apps Script 리다이렉트를 정상 추적
+      const response = await fetch(LOG_SCRIPT_URL, {
+        method: 'GET',
+        redirect: 'follow'
+      });
+      
+      if (!response.ok) {
+        throw new Error('응답 실패: ' + response.status);
+      }
+
       fetchedRawLogs = await response.json();
 
       populateFilterOptions(fetchedRawLogs);
       applyLogFilters();
     } catch (err) {
-      console.error(err);
+      console.error('로그 조회 오류:', err);
       tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">로그를 불러오는 데 실패했습니다. 다시 시도해 주세요.</td></tr>';
     }
   }

@@ -694,18 +694,14 @@ function logUserAction(type, detail) {
       return;
     }
 
-    try {
-      const response = await fetch(LOG_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'read' })
-      });
+try {
+      // GET 방식으로 변경하여 Apps Script의 doGet 통신 실행
+      const response = await fetch(LOG_SCRIPT_URL);
       fetchedRawLogs = await response.json();
       
-      // 드롭다운 필터 옵션 채우기 (중복 제거)
       populateFilterOptions(fetchedRawLogs);
       applyLogFilters();
-    } catch (err) {
+    } catch (err) { ... }
       console.error(err);
       tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ef4444; padding:30px;">로그를 불러오는 데 실패했습니다. 다시 시도해 주세요.</td></tr>`;
     }

@@ -609,35 +609,35 @@
     logUserAction('로그인', '구글 계정 인증 완료');
   }
 
-  function logUserAction(type, detail) {
-    const currentUser = localStorage.getItem(AUTH_STORAGE_KEY) || 'Unknown';
-    const now = new Date();
-    
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
+function logUserAction(type, detail) {
+  const currentUser = localStorage.getItem(AUTH_STORAGE_KEY) || 'Unknown';
+  const now = new Date();
+  
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
 
-    const payload = {
-      action: 'write',
-      timestamp: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,
-      date: `${year}-${month}-${day}`,
-      user: currentUser,
-      type: type,
-      detail: detail
-    };
+  const payload = {
+    action: 'write',
+    timestamp: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,
+    date: `${year}-${month}-${day}`,
+    user: currentUser,
+    type: type,
+    detail: detail
+  };
 
-    if (LOG_SCRIPT_URL && LOG_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL') {
-      fetch(LOG_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).catch(err => console.error('로그 전송 오류:', err));
-    }
+  if (LOG_SCRIPT_URL && LOG_SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_WEBAPP_URL') {
+    fetch(LOG_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' }, // text/plain으로 변경하여 CORS 우회
+      body: JSON.stringify(payload)
+    }).catch(err => console.error('로그 전송 오류:', err));
   }
+}
 
   function initAuthState() {
     const savedEmail = localStorage.getItem(AUTH_STORAGE_KEY);

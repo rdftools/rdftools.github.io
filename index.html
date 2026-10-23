@@ -208,26 +208,6 @@
 
     .mask-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto; cursor: crosshair; display: none; z-index: 10; }
     .mask-box-element { position: absolute; border: 1px solid var(--house-green); background: #ffffff !important; box-sizing: border-box; cursor: move; z-index: 15; }
-    .text-box-element {
-      position: absolute; border: 2px dashed var(--primary); background: #ffffff; box-sizing: border-box;
-      cursor: move; display: flex; align-items: center; justify-content: flex-start; padding: 4px 8px; overflow: hidden; white-space: nowrap; z-index: 25; font-family: sans-serif; pointer-events: auto;
-    }
-    .text-box-element.selected { border: 2px solid var(--primary); box-shadow: 0 0 8px rgba(0, 112, 66, 0.4); }
-    .img-box-element { position: absolute; border: 2px dashed var(--accent-green); box-sizing: border-box; cursor: move; z-index: 25; pointer-events: auto; }
-    .img-box-element img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
-    .link-box-element {
-      position: absolute; border: 2px dashed #007042; background: rgba(0, 112, 66, 0.25) !important;
-      box-sizing: border-box; cursor: move; display: flex; align-items: flex-start; justify-content: flex-start; z-index: 50; pointer-events: auto;
-    }
-    .link-box-element.selected { border: 2px solid #004d2d; background: rgba(0, 112, 66, 0.4) !important; box-shadow: 0 0 10px rgba(0, 112, 66, 0.8); }
-    .link-tag-badge { background: var(--primary); color: #ffffff; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 700; pointer-events: none; margin: 3px; }
-
-    .mask-handle { position: absolute; width: 10px; height: 10px; background: var(--primary); border: 1px solid #ffffff; border-radius: 50%; z-index: 60; }
-    .handle-nw { top: -5px; left: -5px; cursor: nwse-resize; }
-    .handle-ne { top: -5px; right: -5px; cursor: nesw-resize; }
-    .handle-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
-    .handle-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
-
     .mask-close-btn {
       position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; background: var(--house-green);
       color: white; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; z-index: 65;
@@ -242,6 +222,7 @@
     .btn-download-main { background: var(--house-green); color: white; border: none; padding: 14px 20px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; flex: 1; transition: background 0.2s; }
     .btn-download-main:hover { background: #1a2824; }
 
+    /* 병합 드롭존 및 스타일 */
     .merge-dropzone { border: 2px dashed var(--accent-green); background: var(--light-green); border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s ease; }
     .merge-dropzone.dragover { background: #c2dcd2; border-color: var(--primary); transform: scale(1.01); }
     .merge-file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; max-height: 300px; overflow-y: auto; }
@@ -412,6 +393,7 @@
     </div>
   </div>
 
+  <!-- PDF 병합 영역 (복구 완료) -->
   <div class="section-card" id="sectionMerge" style="display:none;">
     <h3 style="font-size:1rem;">여러 PDF 파일 하나로 병합하기</h3>
     <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">파일을 아래 영역에 끌어다 놓으세요. 목록 항목을 마우스로 잡고 끌어(Drag&Drop) <b>병합 순서</b>를 자유롭게 변경할 수 있습니다.</p>
@@ -472,19 +454,19 @@
       <button class="file-btn" onclick="addTextBoxOverCurrentPage()" style="background:var(--primary); color:white;">➕ 텍스트 상자 추가</button>
       <div class="toolbar-group">
         <label>텍스트:</label>
-        <input type="text" id="activeTextContent" class="input-field" style="width:160px; padding:6px;" placeholder="내용 입력" oninput="updateActiveTextBox()">
+        <input type="text" id="activeTextContent" class="input-field" style="width:160px; padding:6px;" placeholder="내용 입력">
       </div>
       <div class="toolbar-group">
         <label>크기:</label>
-        <input type="number" id="activeFontSize" class="input-field" style="width:65px; padding:6px;" value="16" min="8" max="72" oninput="updateActiveTextBox()"> px
+        <input type="number" id="activeFontSize" class="input-field" style="width:65px; padding:6px;" value="16" min="8" max="72"> px
       </div>
       <div class="toolbar-group">
         <label>색상:</label>
-        <input type="color" id="activeTextColor" value="#000000" onchange="updateActiveTextBox()">
+        <input type="color" id="activeTextColor" value="#000000">
       </div>
       <div class="toolbar-group">
         <label>배경색:</label>
-        <input type="color" id="activeBgColor" value="#ffffff" onchange="updateActiveTextBox()">
+        <input type="color" id="activeBgColor" value="#ffffff">
       </div>
     </div>
   </div>
@@ -492,8 +474,7 @@
   <div class="section-card" id="sectionImageEdit" style="display:none;">
     <h3 style="font-size:1rem;">외부 이미지 추가</h3>
     <div class="text-edit-toolbar">
-      <button class="file-btn" onclick="triggerImgInput()" style="background:var(--primary); color:white;">🖼️ 이미지 불러오기</button>
-      <input type="file" id="imageFileInput" accept="image/*" style="display:none;" onchange="onImageSelected(event)">
+      <button class="file-btn" style="background:var(--primary); color:white;">🖼️ 이미지 불러오기</button>
       <span style="font-size:0.8rem; color:#6b7280; margin-left:10px;">💡 이미지 모서리를 드래그하면 <b>원본 비율이 유지</b>된 채 조절됩니다.</span>
     </div>
   </div>
@@ -501,21 +482,13 @@
   <div class="section-card" id="sectionLinkEdit" style="display:none;">
     <h3 style="font-size:1rem;">특정 영역 선택 이동</h3>
     <div class="text-edit-toolbar">
-      <button class="file-btn" onclick="addLinkBoxOverCurrentPage()" style="background:var(--primary); color:white;">🔗 이동 영역 추가</button>
+      <button class="file-btn" style="background:var(--primary); color:white;">🔗 이동 영역 추가</button>
       <div class="toolbar-group">
         <label>이동 방식:</label>
-        <select id="activeLinkType" class="input-field" style="width:130px; padding:6px;" onchange="onLinkTypeSelectChange()">
+        <select id="activeLinkType" class="input-field" style="width:130px; padding:6px;">
           <option value="url">웹 URL 이동</option>
           <option value="page">페이지 이동</option>
         </select>
-      </div>
-      <div class="toolbar-group" id="linkPageGroup" style="display:none;">
-        <label>목표 페이지:</label>
-        <input type="number" id="activeLinkTargetPage" class="input-field" style="width:75px; padding:6px;" value="1" min="1" oninput="updateActiveLinkBox()">
-      </div>
-      <div class="toolbar-group" id="linkUrlGroup">
-        <label>URL 주소:</label>
-        <input type="text" id="activeLinkTargetUrl" class="input-field" style="width:240px; padding:6px;" placeholder="https://example.com" oninput="updateActiveLinkBox()">
       </div>
     </div>
   </div>
@@ -575,9 +548,9 @@
   let imageCandidates = [];
 
   let manualMasks = new Map(); 
-  let textBoxes = new Map();
-  let imageBoxes = new Map();
-  let linkBoxes = new Map();
+
+  // 병합 파일 목록 저장 배열
+  let mergeFiles = [];
 
   /* --- 구글 OAuth & Apps Script 중앙 로그 연동 설정 --- */
   const ADMIN_EMAIL = 'roh@impact7.kr';
@@ -745,11 +718,9 @@
 
     let html = '';
     logs.slice().reverse().forEach(log => {
-      // 1. 일시를 YYYY-MM-DD (년-월-일) 10자리로 한 줄 정제
       let rawDate = String(log.date || log.timestamp || '');
       let formattedDate = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
 
-      // 2. 계정에서 @impact7.kr 제거 후 아이디만 추출
       let displayUser = log.user || '';
       if (displayUser.includes('@')) {
         displayUser = displayUser.split('@')[0];
@@ -784,7 +755,7 @@
     a.click();
   }
 
-  /* --- 로그인 제약 없는 파일 선택 및 드래그 앤 드롭 --- */
+  /* --- 개별 파일 선택 및 드래그 앤 드롭 --- */
   function triggerFileInput() {
     document.getElementById('fileInput').click();
   }
@@ -818,7 +789,6 @@
     showToast('PDF 문서 로드가 완료되었습니다.');
   }
 
-  /* 드래그 앤 드롭 지원 */
   const dropzone = document.getElementById('mainFileDropzone');
   dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
   dropzone.addEventListener('dragleave', () => { dropzone.classList.remove('dragover'); });
@@ -829,6 +799,112 @@
       loadMainPdfFile(e.dataTransfer.files[0]);
     }
   });
+
+  /* --- [복구] PDF 병합 파일 업로드 및 관리 함수들 --- */
+  function triggerMergeFileInput() {
+    document.getElementById('mergeFileInput').click();
+  }
+
+  function onMergeFilesSelected(e) {
+    const files = Array.from(e.target.files);
+    addFilesToMergeList(files);
+    e.target.value = ''; // 재선택 가능하게 초기화
+  }
+
+  function addFilesToMergeList(files) {
+    const pdfFiles = files.filter(f => f.type === 'application/pdf');
+    if (pdfFiles.length === 0) {
+      alert('PDF 파일만 추가 가능합니다.');
+      return;
+    }
+    mergeFiles.push(...pdfFiles);
+    renderMergeFileList();
+  }
+
+  function renderMergeFileList() {
+    const listElem = document.getElementById('mergeFileList');
+    document.getElementById('mergeFileCount').textContent = mergeFiles.length;
+
+    if (mergeFiles.length === 0) {
+      listElem.innerHTML = '<div style="text-align:center; color:#9ca3af; padding:20px; font-size:0.85rem;">추가된 PDF 파일이 없습니다.</div>';
+      return;
+    }
+
+    listElem.innerHTML = '';
+    mergeFiles.forEach((file, idx) => {
+      const item = document.createElement('div');
+      item.className = 'merge-file-item';
+      item.innerHTML = `
+        <div class="merge-item-title">
+          <span class="drag-handle-icon">⋮⋮</span>
+          <span><b>${idx + 1}.</b> ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+        </div>
+        <span class="merge-item-del" onclick="removeMergeFile(${idx})">✕</span>
+      `;
+      listElem.appendChild(item);
+    });
+  }
+
+  function removeMergeFile(index) {
+    mergeFiles.splice(index, 1);
+    renderMergeFileList();
+  }
+
+  function clearMergeList() {
+    mergeFiles = [];
+    renderMergeFileList();
+  }
+
+  // 병합 탭 전용 드롭존 이벤트 바인딩
+  const mergeDropzoneElem = document.getElementById('mergeDropzone');
+  if (mergeDropzoneElem) {
+    mergeDropzoneElem.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      mergeDropzoneElem.classList.add('dragover');
+    });
+    mergeDropzoneElem.addEventListener('dragleave', () => {
+      mergeDropzoneElem.classList.remove('dragover');
+    });
+    mergeDropzoneElem.addEventListener('drop', (e) => {
+      e.preventDefault();
+      mergeDropzoneElem.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        addFilesToMergeList(Array.from(e.dataTransfer.files));
+      }
+    });
+  }
+
+  async function startMergeProcess() {
+    if (mergeFiles.length < 2) {
+      alert('병합을 하려면 최소 2개 이상의 PDF 파일을 추가해 주세요.');
+      return;
+    }
+
+    try {
+      const { PDFDocument } = PDFLib;
+      const mergedPdf = await PDFDocument.create();
+
+      for (const file of mergeFiles) {
+        const buffer = await file.arrayBuffer();
+        const pdf = await PDFDocument.load(buffer);
+        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+        copiedPages.forEach(page => mergedPdf.addPage(page));
+      }
+
+      const pdfBytes = await mergedPdf.save();
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `merged_${Date.now()}.pdf`;
+      a.click();
+
+      showToast(`${mergeFiles.length}개의 PDF 파일 병합이 완료되었습니다.`);
+    } catch (err) {
+      console.error(err);
+      alert('PDF 병합 중 오류가 발생했습니다.');
+    }
+  }
 
   /* --- 워터마크 탐지 알고리즘 --- */
   async function analyzeWatermarks() {
@@ -1105,7 +1181,6 @@
     a.download = `edited_pdf_${Date.now()}.pdf`;
     a.click();
 
-    // 다운로드 로그 기록 없이 하단 토스트 메시지만 출력
     showToast('선명도가 개선된 PDF 파일이 정상적으로 다운로드되었습니다.');
   }
 

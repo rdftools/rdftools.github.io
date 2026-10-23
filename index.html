@@ -220,6 +220,10 @@
     .img-box-element { position: absolute; border: 2px dashed var(--accent-green); box-sizing: border-box; cursor: move; z-index: 25; pointer-events: auto; }
     .img-box-element img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
     
+    /* 이미지 및 박스 모서리 크기 조절 핸들 */
+    .mask-handle { position: absolute; width: 12px; height: 12px; background: var(--primary); border: 1px solid #ffffff; border-radius: 50%; z-index: 60; }
+    .handle-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
+
     .link-box-element {
       position: absolute; border: 2px dashed #007042; background: rgba(0, 112, 66, 0.25) !important;
       box-sizing: border-box; cursor: move; display: flex; align-items: flex-start; justify-content: flex-start; z-index: 50; pointer-events: auto;
@@ -241,7 +245,6 @@
     .btn-download-main { background: var(--house-green); color: white; border: none; padding: 14px 20px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; flex: 1; transition: background 0.2s; }
     .btn-download-main:hover { background: #1a2824; }
 
-    /* 병합 드롭존 스타일 */
     .merge-dropzone { border: 2px dashed var(--accent-green); background: var(--light-green); border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s ease; }
     .merge-dropzone.dragover { background: #c2dcd2; border-color: var(--primary); transform: scale(1.01); }
     .merge-file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; max-height: 300px; overflow-y: auto; }
@@ -494,7 +497,7 @@
     <div class="text-edit-toolbar">
       <button class="file-btn" onclick="triggerImgInput()" style="background:var(--primary); color:white;">🖼️ 이미지 불러오기</button>
       <input type="file" id="imageFileInput" accept="image/*" style="display:none;" onchange="onImageSelected(event)">
-      <span style="font-size:0.8rem; color:#6b7280; margin-left:10px;">💡 이미지를 추가하면 화면 마우스로 자리를 이동시킬 수 있습니다.</span>
+      <span style="font-size:0.8rem; color:#6b7280; margin-left:10px;">💡 이미지를 불러온 뒤 <b>오른쪽 아래 모서리 동그라미</b>를 잡고 끌어 크기를 조절하세요.</span>
     </div>
   </div>
 
@@ -573,13 +576,12 @@
   let textCandidates = [];
   let imageCandidates = [];
 
-  // 각 데이터 저장소 (페이지별 Map)
   let manualMasks = new Map(); 
   let textBoxes = new Map();
   let imageBoxes = new Map();
   let linkBoxes = new Map();
 
-  let activeSelectedElement = null; // 선택된 활성 텍스트/링크 상자
+  let activeSelectedElement = null;
 
   let mergeFiles = [];
   let draggedCardIndex = null;
@@ -1032,7 +1034,7 @@
     syncOverlayBoxes(pageNum);
   }
 
-  /* --- [핵심 추가/수정] 4가지 기능 (마스킹, 텍스트, 이미지, 링크) 레이어 및 드래그 바인딩 --- */
+  /* --- 레이어 싱크 및 이미지 크기조절(Resize) 내장 --- */
   function syncOverlayBoxes(pageNum) {
     const overlay = document.getElementById('maskOverlay');
     overlay.innerHTML = '';
@@ -1045,7 +1047,7 @@
       return;
     }
 
-    // 1. 영역 마스킹 상자들
+    // 1. 영역 마스킹
     const masks = manualMasks.get(pageNum) || [];
     masks.forEach(m => {
       const box = document.createElement('div');
@@ -1064,7 +1066,7 @@
       overlay.appendChild(box);
     });
 
-    // 2. 텍스트 상자들
+    // 2. 텍스트 상자
     const texts = textBoxes.get(pageNum) || [];
     texts.forEach(t => {
       const box = document.createElement('div');
@@ -1097,7 +1099,7 @@
       overlay.appendChild(box);
     });
 
-    // 3. 이미지 상자들
+    // 3. 이미지 상자 (크기 조절 핸들 추가완료)
     const imgs = imageBoxes.get(pageNum) || [];
     imgs.forEach(imgData => {
       const box = document.createElement('div');
@@ -1109,7 +1111,14 @@
       imgTag.src = imgData.src;
       box.appendChild(imgTag);
 
+      // 이미지 이동 핸들
       makeElementDraggable(box, imgData, pageNum);
+
+      // 이미지 모서리 크기 조절(Resize) 핸들
+      const resizeHandle = document.createElement('div');
+      resizeHandle.className = 'mask-handle handle-se';
+      makeElementResizable(box, resizeHandle, imgData, pageNum);
+      box.appendChild(resizeHandle);
 
       const closeBtn = document.createElement('div');
       closeBtn.className = 'mask-close-btn'; closeBtn.textContent = '✕';
@@ -1122,7 +1131,7 @@
       overlay.appendChild(box);
     });
 
-    // 4. 링크/이동 영역 상자들
+    // 4. 링크 상자
     const links = linkBoxes.get(pageNum) || [];
     links.forEach(l => {
       const box = document.createElement('div');
@@ -1136,6 +1145,11 @@
       box.appendChild(badge);
 
       makeElementDraggable(box, l, pageNum);
+
+      const resizeHandle = document.createElement('div');
+      resizeHandle.className = 'mask-handle handle-se';
+      makeElementResizable(box, resizeHandle, l, pageNum);
+      box.appendChild(resizeHandle);
 
       box.onclick = (e) => {
         e.stopPropagation();
@@ -1160,11 +1174,11 @@
     });
   }
 
-  // 요소 마우스 이동 드래그 공통 함수
+  // 요소 위치 이동 드래그 함수
   function makeElementDraggable(elm, dataObj, pageNum) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     elm.onmousedown = (e) => {
-      if (e.target.classList.contains('mask-close-btn')) return;
+      if (e.target.classList.contains('mask-close-btn') || e.target.classList.contains('mask-handle')) return;
       e.stopPropagation();
       pos3 = e.clientX;
       pos4 = e.clientY;
@@ -1188,7 +1202,36 @@
     };
   }
 
-  /* --- 영역 마스킹 직접 수동 드래그 생성 --- */
+  // 요소 크기 조절(Resize) 드래그 함수
+  function makeElementResizable(elm, handle, dataObj, pageNum) {
+    handle.onmousedown = (e) => {
+      e.stopPropagation();
+      let startX = e.clientX;
+      let startY = e.clientY;
+      let startWidth = parseInt(document.defaultView.getComputedStyle(elm).width, 10);
+      let startHeight = parseInt(document.defaultView.getComputedStyle(elm).height, 10);
+
+      document.onmousemove = (e2) => {
+        let newW = startWidth + e2.clientX - startX;
+        let newH = startHeight + e2.clientY - startY;
+        if (newW > 20) {
+          elm.style.width = newW + 'px';
+          dataObj.w = newW;
+        }
+        if (newH > 20) {
+          elm.style.height = newH + 'px';
+          dataObj.h = newH;
+        }
+      };
+
+      document.onmouseup = () => {
+        document.onmousemove = null;
+        document.onmouseup = null;
+      };
+    };
+  }
+
+  /* --- 영역 마스킹 수동 드래그 생성 --- */
   let isDrawingMask = false;
   let startX = 0, startY = 0;
   let currentMaskBox = null;
@@ -1250,7 +1293,7 @@
     syncOverlayBoxes(pageNum);
   });
 
-  /* --- 텍스트 / 이미지 / 링크 제어 함수들 --- */
+  /* --- 텍스트 / 이미지 / 링크 제어 --- */
   function addTextBoxOverCurrentPage() {
     if (!pdfJsDoc) { alert('PDF 파일을 먼저 선택해 주세요.'); return; }
     const pageNum = getCurrentPageNum();
@@ -1439,7 +1482,7 @@
       const [copiedPage] = await pdfDoc.copyPages(srcDoc, [origPageNum - 1]);
       const pageHeight = copiedPage.getHeight();
 
-      // 1. 마스킹 영역 칠하기
+      // 1. 마스킹
       const masks = manualMasks.get(origPageNum) || [];
       masks.forEach(m => {
         copiedPage.drawRectangle({
@@ -1451,7 +1494,7 @@
         });
       });
 
-      // 2. 텍스트 요소 합성
+      // 2. 텍스트
       const texts = textBoxes.get(origPageNum) || [];
       texts.forEach(t => {
         copiedPage.drawText(t.text || '', {
@@ -1463,7 +1506,7 @@
         });
       });
 
-      // 3. 이미지 요소 합성
+      // 3. 이미지
       const imgs = imageBoxes.get(origPageNum) || [];
       for (const imgData of imgs) {
         let embeddedImg = null;

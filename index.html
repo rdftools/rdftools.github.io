@@ -925,7 +925,8 @@
 
   // 한 페이지에 그려진 모든 이미지의 위치/크기를 pt(좌상단 기준)로 수집
   async function collectPageImages(page, pageHeightPt) {
-    const OPS = pdfjsLib.OPS;
+    const OPS = (window.pdfjsLib && pdfjsLib.OPS) || {};
+
     let opList;
     try {
       opList = await page.getOperatorList();
@@ -954,11 +955,12 @@
       } else if (fn === OPS.paintFormXObjectEnd) {
         ctm = stack.pop() || [1, 0, 0, 1, 0, 0];
       } else if (
-        fn === OPS.paintImageXObject ||
-        fn === OPS.paintJpegXObject ||
-        fn === OPS.paintImageMaskXObject ||
-        fn === OPS.paintInlineImageXObject
+        (OPS.paintImageXObject !== undefined && fn === OPS.paintImageXObject) ||
+        (OPS.paintJpegXObject !== undefined && fn === OPS.paintJpegXObject) ||
+        (OPS.paintImageMaskXObject !== undefined && fn === OPS.paintImageMaskXObject) ||
+        (OPS.paintInlineImageXObject !== undefined && fn === OPS.paintInlineImageXObject)
       ) {
+
         // 단위 정사각형(0,0)~(1,1) 을 ctm 으로 매핑한 네 꼭짓점
         const pts = [[0,0],[1,0],[0,1],[1,1]].map(([u, v]) => ({
           x: ctm[0]*u + ctm[2]*v + ctm[4],

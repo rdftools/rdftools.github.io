@@ -1845,7 +1845,8 @@
     if (!rawBuffer) { alert('수정할 PDF 파일을 먼저 로드해 주세요.'); return; }
 
     const { PDFDocument, rgb, StandardFonts } = PDFLib;
-    const srcDoc = await PDFDocument.load(rawBuffer);
+    const srcDoc = await PDFDocument.load(rawBuffer, { ignoreEncryption: true });
+
     const pdfDoc = await PDFDocument.create();
     const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 

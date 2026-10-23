@@ -1840,9 +1840,42 @@
     return String(str).replace(/[^\x00-\xFF]/g, '?');
   }
 
+  /* --- PDF 최종 저장 --- */
+
+  // 암호화 PDF 대응: pdf.js 로 렌더한 뒤 이미지 기반 PDF 로 재구성
+  async function buildDecryptedBuffer(scale = 2) {
+    const { PDFDocument } = PDFLib;
+    const outDoc = await PDFDocument.create();
+
+    for (let i = 0; i < activePages.length; i++) {
+      const pageNum = activePages[i];
+      showToast(`암호 해제 변환 중... (${i + 1}/${activePages.length})`);
+
+      const page = await pdfJsDoc.getPage(pageNum);
+      const base = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(viewport.width);
+      canvas.height = Math.round(viewport.height);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      const jpg = canvas.toDataURL('image/jpeg', 0.92);
+      const img = await outDoc.embedJpg(jpg);
+      const outPage = outDoc.addPage([base.width, base.height]);
+      outPage.drawImage(img, { x: 0, y: 0, width: base.width, height: base.height });
+    }
+
+    return await outDoc.save();
+  }
+
   async function processAndDownload() {
     try {
       await processAndDownloadInner();
+
     } catch (err) {
       console.error('다운로드 실패:', err);
       alert('다운로드 실패\n\n' + (err && err.stack ? err.stack : err));

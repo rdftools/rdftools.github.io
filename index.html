@@ -1866,17 +1866,26 @@
       const [copiedPage] = await pdfDoc.copyPages(srcDoc, [origPageNum - 1]);
       const pageHeight = copiedPage.getHeight();
 
-      // 1. 마스킹 (데이터가 이미 pt 이므로 변환 불필요)
+      // 1. 마스킹
       const masks = manualMasks.get(origPageNum) || [];
       masks.forEach(m => {
+        const mx = Number(m.x !== undefined ? m.x : m.pdfX);
+        const my = Number(m.y !== undefined ? m.y : m.pdfY);
+        const mw = Number(m.w !== undefined ? m.w : m.pdfW);
+        const mh = Number(m.h !== undefined ? m.h : m.pdfH);
+        if (![mx, my, mw, mh].every(Number.isFinite) || mw <= 0 || mh <= 0) {
+          console.warn('좌표가 없는 마스크 건너뜀', m);
+          return;
+        }
         copiedPage.drawRectangle({
-          x: m.x,
-          y: pageHeight - m.y - m.h,
-          width: m.w,
-          height: m.h,
+          x: mx,
+          y: pageHeight - my - mh,
+          width: mw,
+          height: mh,
           color: rgb(1, 1, 1)
         });
       });
+
 
       // 2. 텍스트
       const texts = textBoxes.get(origPageNum) || [];

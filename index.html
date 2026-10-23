@@ -222,7 +222,7 @@
     .btn-download-main { background: var(--house-green); color: white; border: none; padding: 14px 20px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; flex: 1; transition: background 0.2s; }
     .btn-download-main:hover { background: #1a2824; }
 
-    /* 병합 드롭존 및 스타일 */
+    /* 병합 드롭존 스타일 */
     .merge-dropzone { border: 2px dashed var(--accent-green); background: var(--light-green); border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s ease; }
     .merge-dropzone.dragover { background: #c2dcd2; border-color: var(--primary); transform: scale(1.01); }
     .merge-file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; max-height: 300px; overflow-y: auto; }
@@ -393,7 +393,7 @@
     </div>
   </div>
 
-  <!-- PDF 병합 영역 (복구 완료) -->
+  <!-- PDF 병합 영역 -->
   <div class="section-card" id="sectionMerge" style="display:none;">
     <h3 style="font-size:1rem;">여러 PDF 파일 하나로 병합하기</h3>
     <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">파일을 아래 영역에 끌어다 놓으세요. 목록 항목을 마우스로 잡고 끌어(Drag&Drop) <b>병합 순서</b>를 자유롭게 변경할 수 있습니다.</p>
@@ -800,7 +800,7 @@
     }
   });
 
-  /* --- [복구] PDF 병합 파일 업로드 및 관리 함수들 --- */
+  /* --- PDF 병합 파일 업로드 및 관리 함수들 --- */
   function triggerMergeFileInput() {
     document.getElementById('mergeFileInput').click();
   }
@@ -899,6 +899,8 @@
       a.download = `merged_${Date.now()}.pdf`;
       a.click();
 
+      // 💡 PDF 병합 감사 로그 추가
+      logUserAction('PDF 병합', `${mergeFiles.length}개 PDF 파일 병합 완료`);
       showToast(`${mergeFiles.length}개의 PDF 파일 병합이 완료되었습니다.`);
     } catch (err) {
       console.error(err);

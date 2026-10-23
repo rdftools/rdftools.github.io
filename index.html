@@ -508,8 +508,16 @@
         <label>배경색:</label>
         <input type="color" id="activeBgColor" value="#ffffff" onchange="updateActiveTextBox()">
       </div>
+      <div class="toolbar-group">
+        <label>폰트:</label>
+        <select id="localFontSelect" class="input-field" style="width:180px; padding:6px;">
+          <option value="">기본 폰트(나눔고딕)</option>
+        </select>
+        <button class="file-btn" onclick="loadLocalFonts()">내 PC 폰트 불러오기</button>
+      </div>
     </div>
   </div>
+
 
   <div class="section-card" id="sectionImageEdit" style="display:none;">
     <h3 style="font-size:1rem;">외부 이미지 추가</h3>
@@ -1854,6 +1862,29 @@
     const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '#000000');
     if (!m) return rgb(0, 0, 0);
     return rgb(parseInt(m[1],16)/255, parseInt(m[2],16)/255, parseInt(m[3],16)/255);
+  }
+  let localFontList = [];
+
+  async function loadLocalFonts() {
+    if (!window.queryLocalFonts) {
+      alert('이 브라우저는 PC 폰트 읽기를 지원하지 않습니다.\n크롬 또는 엣지에서 사용해 주세요.');
+      return;
+    }
+    try {
+      localFontList = await window.queryLocalFonts();
+    } catch (err) {
+      alert('폰트 권한이 거부되었습니다.\n기본 폰트로 진행됩니다.');
+      return;
+    }
+    const sel = document.getElementById('localFontSelect');
+    sel.innerHTML = '<option value="">기본 폰트(나눔고딕)</option>';
+    localFontList.forEach((f, i) => {
+      const op = document.createElement('option');
+      op.value = i;
+      op.textContent = f.fullName;
+      sel.appendChild(op);
+    });
+    alert(localFontList.length + '개의 폰트를 찾았습니다.');
   }
 
   // Helvetica 는 한글을 인코딩하지 못해 save() 가 통째로 실패합니다.

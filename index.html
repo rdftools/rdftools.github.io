@@ -220,16 +220,16 @@
     .img-box-element { position: absolute; border: 2px dashed var(--accent-green); box-sizing: border-box; cursor: move; z-index: 25; pointer-events: auto; }
     .img-box-element img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
     
-    /* 이미지 및 박스 모서리 크기 조절 핸들 */
     .mask-handle { position: absolute; width: 12px; height: 12px; background: var(--primary); border: 1px solid #ffffff; border-radius: 50%; z-index: 60; }
     .handle-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
 
+    /* 링크 박스 스타일 정밀 수정 */
     .link-box-element {
       position: absolute; border: 2px dashed #007042; background: rgba(0, 112, 66, 0.25) !important;
-      box-sizing: border-box; cursor: move; display: flex; align-items: flex-start; justify-content: flex-start; z-index: 50; pointer-events: auto;
+      box-sizing: border-box; cursor: move; display: flex; align-items: flex-start; justify-content: flex-start; z-index: 50; pointer-events: auto; user-select: none;
     }
     .link-box-element.selected { border: 2px solid #004d2d; background: rgba(0, 112, 66, 0.4) !important; box-shadow: 0 0 10px rgba(0, 112, 66, 0.8); }
-    .link-tag-badge { background: var(--primary); color: #ffffff; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 700; pointer-events: none; margin: 3px; }
+    .link-tag-badge { background: var(--primary); color: #ffffff; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; pointer-events: none; margin: 3px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .mask-close-btn {
       position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; background: var(--house-green);
@@ -1034,7 +1034,7 @@
     syncOverlayBoxes(pageNum);
   }
 
-  /* --- 레이어 싱크 및 이미지 크기조절(Resize) 내장 --- */
+  /* --- 레이어 싱크 및 이동/크기조절(Resize) 완벽 바인딩 --- */
   function syncOverlayBoxes(pageNum) {
     const overlay = document.getElementById('maskOverlay');
     overlay.innerHTML = '';
@@ -1099,7 +1099,7 @@
       overlay.appendChild(box);
     });
 
-    // 3. 이미지 상자 (크기 조절 핸들 추가완료)
+    // 3. 이미지 상자
     const imgs = imageBoxes.get(pageNum) || [];
     imgs.forEach(imgData => {
       const box = document.createElement('div');
@@ -1111,10 +1111,8 @@
       imgTag.src = imgData.src;
       box.appendChild(imgTag);
 
-      // 이미지 이동 핸들
       makeElementDraggable(box, imgData, pageNum);
 
-      // 이미지 모서리 크기 조절(Resize) 핸들
       const resizeHandle = document.createElement('div');
       resizeHandle.className = 'mask-handle handle-se';
       makeElementResizable(box, resizeHandle, imgData, pageNum);
@@ -1131,7 +1129,7 @@
       overlay.appendChild(box);
     });
 
-    // 4. 링크 상자
+    // 4. 링크 상자 (마우스 이동, 선택, 리사이즈 완전 보정)
     const links = linkBoxes.get(pageNum) || [];
     links.forEach(l => {
       const box = document.createElement('div');
@@ -1141,7 +1139,7 @@
 
       const badge = document.createElement('div');
       badge.className = 'link-tag-badge';
-      badge.textContent = l.type === 'url' ? `🔗 ${l.targetUrl}` : `📄 p.${l.targetPage}`;
+      badge.textContent = l.type === 'url' ? `🔗 ${l.targetUrl || 'URL주소'}` : `📄 p.${l.targetPage || '1'}`;
       box.appendChild(badge);
 
       makeElementDraggable(box, l, pageNum);
@@ -1151,13 +1149,13 @@
       makeElementResizable(box, resizeHandle, l, pageNum);
       box.appendChild(resizeHandle);
 
-      box.onclick = (e) => {
-        e.stopPropagation();
+      box.onmousedown = (e) => {
+        if (e.target.classList.contains('mask-close-btn') || e.target.classList.contains('mask-handle')) return;
         activeSelectedElement = l;
         document.getElementById('activeLinkType').value = l.type;
         onLinkTypeSelectChange();
-        if (l.type === 'url') document.getElementById('activeLinkTargetUrl').value = l.targetUrl;
-        else document.getElementById('activeLinkTargetPage').value = l.targetPage;
+        if (l.type === 'url') document.getElementById('activeLinkTargetUrl').value = l.targetUrl || '';
+        else document.getElementById('activeLinkTargetPage').value = l.targetPage || 1;
         syncOverlayBoxes(pageNum);
       };
 
@@ -1214,7 +1212,7 @@
       document.onmousemove = (e2) => {
         let newW = startWidth + e2.clientX - startX;
         let newH = startHeight + e2.clientY - startY;
-        if (newW > 20) {
+        if (newW > 25) {
           elm.style.width = newW + 'px';
           dataObj.w = newW;
         }
@@ -1343,7 +1341,7 @@
 
     const newObj = {
       id: 'link_' + Date.now(),
-      x: 70, y: 70, w: 120, h: 50, type: 'url', targetUrl: 'https://example.com', targetPage: 1
+      x: 70, y: 70, w: 140, h: 45, type: 'url', targetUrl: 'https://example.com', targetPage: 1
     };
     linkBoxes.get(pageNum).push(newObj);
     activeSelectedElement = newObj;
@@ -1468,7 +1466,7 @@
     showToast('선택한 페이지가 삭제되었습니다.');
   }
 
-  /* --- PDF 최종 합성 및 저장 --- */
+  /* --- PDF 최종 합성 및 저장 (실제 클릭 가능한 링크 Annotation 내장) --- */
   async function processAndDownload() {
     if (!rawBuffer) { alert('수정할 PDF 파일을 먼저 로드해 주세요.'); return; }
 
@@ -1476,6 +1474,8 @@
     const srcDoc = await PDFDocument.load(rawBuffer);
     const pdfDoc = await PDFDocument.create();
     const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    const createdPages = [];
 
     for (let i = 0; i < activePages.length; i++) {
       const origPageNum = activePages[i];
@@ -1523,8 +1523,54 @@
         });
       }
 
-      pdfDoc.addPage(copiedPage);
+      const addedPage = pdfDoc.addPage(copiedPage);
+      createdPages.push({ origPageNum, pageObj: addedPage, height: pageHeight });
     }
+
+    // 4. 클릭 가능한 링크 Annotation 등록
+    createdPages.forEach((item, index) => {
+      const links = linkBoxes.get(item.origPageNum) || [];
+      links.forEach(l => {
+        const linkX = l.x / renderZoomScale;
+        const linkY = item.height - (l.y / renderZoomScale) - (l.h / renderZoomScale);
+        const linkW = l.w / renderZoomScale;
+        const linkH = l.h / renderZoomScale;
+
+        if (l.type === 'url') {
+          let targetUrl = l.targetUrl || 'https://example.com';
+          if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+            targetUrl = 'https://' + targetUrl;
+          }
+          const linkAnnot = pdfDoc.context.obj({
+            Type: 'Annot',
+            Subtype: 'Link',
+            Rect: [linkX, linkY, linkX + linkW, linkY + linkH],
+            Border: [0, 0, 0],
+            A: {
+              Type: 'Action',
+              S: 'URI',
+              URI: pdfDoc.context.obj(targetUrl)
+            }
+          });
+          const linkRef = pdfDoc.context.register(linkAnnot);
+          item.pageObj.node.addAnnot(linkRef);
+        } else {
+          const targetPgNum = parseInt(l.targetPage, 10) || 1;
+          const targetIndex = Math.min(Math.max(0, targetPgNum - 1), createdPages.length - 1);
+          const targetPageObj = createdPages[targetIndex].pageObj;
+
+          const linkAnnot = pdfDoc.context.obj({
+            Type: 'Annot',
+            Subtype: 'Link',
+            Rect: [linkX, linkY, linkX + linkW, linkY + linkH],
+            Border: [0, 0, 0],
+            Dest: [targetPageObj.ref, 'XYZ', null, null, null]
+          });
+          const linkRef = pdfDoc.context.register(linkAnnot);
+          item.pageObj.node.addAnnot(linkRef);
+        }
+      });
+    });
 
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
@@ -1534,7 +1580,7 @@
     a.download = `edited_pdf_${Date.now()}.pdf`;
     a.click();
 
-    showToast('선명도가 개선된 PDF 파일이 정상적으로 다운로드되었습니다.');
+    showToast('선명도가 개선되고 링크가 포함된 PDF가 다운로드되었습니다.');
   }
 
   function prevPage() { if (currentActiveIndex > 0) { currentActiveIndex--; renderCurrentPage(); } }

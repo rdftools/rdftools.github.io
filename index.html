@@ -2040,6 +2040,8 @@
 
       // 2. 텍스트
       const texts = textBoxes.get(origPageNum) || [];
+      console.log('페이지', origPageNum, '텍스트 개수', texts.length, texts);
+
       texts.forEach(t => {
         const fs = parseFloat(t.fontSize || 16);
         copiedPage.drawText(toWinAnsiSafe(t.text || ''), {

@@ -1112,14 +1112,8 @@
   }
 
 
-    document.getElementById('textCandBadge').textContent = `(${textCandidates.length})`;
-    document.getElementById('imgCandBadge').textContent = `(${imageCandidates.length})`;
-    renderCandidates();
-    showToast(`분석 완료 — 텍스트 ${textCandidates.length}건 / 반복 이미지 ${imageCandidates.length}건`);
-  }
-
-
   function escapeHtml(s) {
+
     return String(s).replace(/[&<>"']/g, c =>
       ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }

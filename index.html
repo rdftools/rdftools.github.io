@@ -180,12 +180,10 @@
     .candidate-card:hover { background: var(--light-green); }
     .candidate-info { display: flex; align-items: center; gap: 12px; flex: 1; }
     .candidate-text { font-size: 0.9rem; font-weight: 600; color: #1f2937; word-break: break-all; }
-    .candidate-img-preview { max-width: 120px; max-height: 60px; object-fit: contain; border: 1px solid var(--border); border-radius: 4px; background: #fff; }
     .candidate-count { font-size: 0.75rem; background: var(--light-green); color: var(--house-green); padding: 2px 8px; border-radius: 12px; font-weight: 600; white-space: nowrap; }
 
     .status-toast { padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; background: var(--light-green); color: var(--house-green); border: 1px solid var(--primary); display: none; font-weight: 600; }
 
-    /* 페이지 썸네일 카드 및 드래그 관련 스타일 */
     .page-grid-container {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px;
       max-height: 920px; overflow-y: auto; padding: 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;
@@ -209,8 +207,26 @@
     canvas#pdfCanvas { background: white; display: none; }
     .empty-preview-text { color: rgba(255, 255, 255, 0.6); font-size: 0.95rem; font-weight: 600; text-align: center; padding: 60px 20px; }
 
+    /* 레이어 엘리먼트 스타일 */
     .mask-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto; cursor: crosshair; display: none; z-index: 10; }
     .mask-box-element { position: absolute; border: 1px solid var(--house-green); background: #ffffff !important; box-sizing: border-box; cursor: move; z-index: 15; }
+    
+    .text-box-element {
+      position: absolute; border: 2px dashed var(--primary); background: #ffffff; box-sizing: border-box;
+      cursor: move; display: flex; align-items: center; justify-content: flex-start; padding: 4px 8px; overflow: hidden; white-space: nowrap; z-index: 25; font-family: sans-serif; pointer-events: auto;
+    }
+    .text-box-element.selected { border: 2px solid var(--primary); box-shadow: 0 0 8px rgba(0, 112, 66, 0.4); }
+
+    .img-box-element { position: absolute; border: 2px dashed var(--accent-green); box-sizing: border-box; cursor: move; z-index: 25; pointer-events: auto; }
+    .img-box-element img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+    
+    .link-box-element {
+      position: absolute; border: 2px dashed #007042; background: rgba(0, 112, 66, 0.25) !important;
+      box-sizing: border-box; cursor: move; display: flex; align-items: flex-start; justify-content: flex-start; z-index: 50; pointer-events: auto;
+    }
+    .link-box-element.selected { border: 2px solid #004d2d; background: rgba(0, 112, 66, 0.4) !important; box-shadow: 0 0 10px rgba(0, 112, 66, 0.8); }
+    .link-tag-badge { background: var(--primary); color: #ffffff; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 700; pointer-events: none; margin: 3px; }
+
     .mask-close-btn {
       position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; background: var(--house-green);
       color: white; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; z-index: 65;
@@ -396,7 +412,6 @@
     </div>
   </div>
 
-  <!-- PDF 병합 영역 -->
   <div class="section-card" id="sectionMerge" style="display:none;">
     <h3 style="font-size:1rem;">여러 PDF 파일 하나로 병합하기</h3>
     <p style="font-size:0.85rem; color:#64748b; margin-top:-10px;">파일을 아래 영역에 끌어다 놓으세요. 목록 항목을 마우스로 잡고 끌어(Drag&Drop) <b>병합 순서</b>를 자유롭게 변경할 수 있습니다.</p>
@@ -444,7 +459,7 @@
   <div class="section-card" id="sectionMasking" style="display:none;">
     <h3 style="font-size:1rem;">영역 직접 마스킹 (화이트아웃)</h3>
     <div class="text-edit-toolbar">
-      <span style="font-size:0.85rem; color:#64748b;">미리보기 화면에서 마우스 드래그로 영역을 그린 후 일괄 적용할 수 있습니다.</span>
+      <span style="font-size:0.85rem; color:#64748b;">미리보기 화면에서 마우스 드래그로 마스킹 상자를 그릴 수 있습니다.</span>
       <button class="file-btn" onclick="applyMaskToAllPages()" style="background:var(--primary); color:white; margin-left:auto;">
         ⚡ 현재 그려진 마스킹을 전체 페이지에 일괄 적용
       </button>
@@ -457,19 +472,19 @@
       <button class="file-btn" onclick="addTextBoxOverCurrentPage()" style="background:var(--primary); color:white;">➕ 텍스트 상자 추가</button>
       <div class="toolbar-group">
         <label>텍스트:</label>
-        <input type="text" id="activeTextContent" class="input-field" style="width:160px; padding:6px;" placeholder="내용 입력">
+        <input type="text" id="activeTextContent" class="input-field" style="width:160px; padding:6px;" placeholder="내용 입력" oninput="updateActiveTextBox()">
       </div>
       <div class="toolbar-group">
         <label>크기:</label>
-        <input type="number" id="activeFontSize" class="input-field" style="width:65px; padding:6px;" value="16" min="8" max="72"> px
+        <input type="number" id="activeFontSize" class="input-field" style="width:65px; padding:6px;" value="16" min="8" max="72" oninput="updateActiveTextBox()"> px
       </div>
       <div class="toolbar-group">
         <label>색상:</label>
-        <input type="color" id="activeTextColor" value="#000000">
+        <input type="color" id="activeTextColor" value="#000000" onchange="updateActiveTextBox()">
       </div>
       <div class="toolbar-group">
         <label>배경색:</label>
-        <input type="color" id="activeBgColor" value="#ffffff">
+        <input type="color" id="activeBgColor" value="#ffffff" onchange="updateActiveTextBox()">
       </div>
     </div>
   </div>
@@ -477,21 +492,30 @@
   <div class="section-card" id="sectionImageEdit" style="display:none;">
     <h3 style="font-size:1rem;">외부 이미지 추가</h3>
     <div class="text-edit-toolbar">
-      <button class="file-btn" style="background:var(--primary); color:white;">🖼️ 이미지 불러오기</button>
-      <span style="font-size:0.8rem; color:#6b7280; margin-left:10px;">💡 이미지 모서리를 드래그하면 <b>원본 비율이 유지</b>된 채 조절됩니다.</span>
+      <button class="file-btn" onclick="triggerImgInput()" style="background:var(--primary); color:white;">🖼️ 이미지 불러오기</button>
+      <input type="file" id="imageFileInput" accept="image/*" style="display:none;" onchange="onImageSelected(event)">
+      <span style="font-size:0.8rem; color:#6b7280; margin-left:10px;">💡 이미지를 추가하면 화면 마우스로 자리를 이동시킬 수 있습니다.</span>
     </div>
   </div>
 
   <div class="section-card" id="sectionLinkEdit" style="display:none;">
     <h3 style="font-size:1rem;">특정 영역 선택 이동</h3>
     <div class="text-edit-toolbar">
-      <button class="file-btn" style="background:var(--primary); color:white;">🔗 이동 영역 추가</button>
+      <button class="file-btn" onclick="addLinkBoxOverCurrentPage()" style="background:var(--primary); color:white;">🔗 이동 영역 추가</button>
       <div class="toolbar-group">
         <label>이동 방식:</label>
-        <select id="activeLinkType" class="input-field" style="width:130px; padding:6px;">
+        <select id="activeLinkType" class="input-field" style="width:130px; padding:6px;" onchange="onLinkTypeSelectChange()">
           <option value="url">웹 URL 이동</option>
           <option value="page">페이지 이동</option>
         </select>
+      </div>
+      <div class="toolbar-group" id="linkPageGroup" style="display:none;">
+        <label>목표 페이지:</label>
+        <input type="number" id="activeLinkTargetPage" class="input-field" style="width:75px; padding:6px;" value="1" min="1" oninput="updateActiveLinkBox()">
+      </div>
+      <div class="toolbar-group" id="linkUrlGroup">
+        <label>URL 주소:</label>
+        <input type="text" id="activeLinkTargetUrl" class="input-field" style="width:240px; padding:6px;" placeholder="https://example.com" oninput="updateActiveLinkBox()">
       </div>
     </div>
   </div>
@@ -546,16 +570,18 @@
   let currentRenderTask = null;
 
   let pageRotations = new Map();
-
   let textCandidates = [];
   let imageCandidates = [];
 
+  // 각 데이터 저장소 (페이지별 Map)
   let manualMasks = new Map(); 
+  let textBoxes = new Map();
+  let imageBoxes = new Map();
+  let linkBoxes = new Map();
 
-  // 병합 파일 목록 저장 배열
+  let activeSelectedElement = null; // 선택된 활성 텍스트/링크 상자
+
   let mergeFiles = [];
-
-  // 썸네일 드래그 앤 드롭 위치 저장용 변수
   let draggedCardIndex = null;
 
   /* --- 구글 OAuth & Apps Script 중앙 로그 연동 설정 --- */
@@ -563,7 +589,7 @@
   const AUTH_STORAGE_KEY = 'impact7_pdf_auth_email';
   const LOG_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby03uUDvOLzBeC5suyln_VI6RNC0R2dwv_IMqfuHl53eHVO3qUH99SPlWEzW1LEDjToaQ/exec';
 
-  let fetchedRawLogs = []; // 서버에서 불러온 원본 로그 저장용
+  let fetchedRawLogs = [];
 
   function parseJwt(token) {
     const base64Url = token.split('.')[1];
@@ -655,12 +681,9 @@
         redirect: 'follow'
       });
       
-      if (!response.ok) {
-        throw new Error('응답 실패: ' + response.status);
-      }
+      if (!response.ok) throw new Error('응답 실패: ' + response.status);
 
       fetchedRawLogs = await response.json();
-
       populateFilterOptions(fetchedRawLogs);
       applyLogFilters();
     } catch (err) {
@@ -728,9 +751,7 @@
       let formattedDate = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
 
       let displayUser = log.user || '';
-      if (displayUser.includes('@')) {
-        displayUser = displayUser.split('@')[0];
-      }
+      if (displayUser.includes('@')) displayUser = displayUser.split('@')[0];
 
       html += `
         <tr>
@@ -761,7 +782,7 @@
     a.click();
   }
 
-  /* --- 개별 파일 선택 및 드래그 앤 드롭 --- */
+  /* --- 파일 선택 및 드래그 앤 드롭 --- */
   function triggerFileInput() {
     document.getElementById('fileInput').click();
   }
@@ -788,6 +809,9 @@
     currentActiveIndex = 0;
     pageRotations.clear();
     manualMasks.clear();
+    textBoxes.clear();
+    imageBoxes.clear();
+    linkBoxes.clear();
 
     await analyzeWatermarks();
     renderPageThumbnails();
@@ -806,23 +830,13 @@
     }
   });
 
-  /* --- PDF 병합 파일 업로드 및 관리 함수들 --- */
-  function triggerMergeFileInput() {
-    document.getElementById('mergeFileInput').click();
-  }
-
-  function onMergeFilesSelected(e) {
-    const files = Array.from(e.target.files);
-    addFilesToMergeList(files);
-    e.target.value = ''; // 재선택 가능하게 초기화
-  }
+  /* --- PDF 병합 --- */
+  function triggerMergeFileInput() { document.getElementById('mergeFileInput').click(); }
+  function onMergeFilesSelected(e) { addFilesToMergeList(Array.from(e.target.files)); e.target.value = ''; }
 
   function addFilesToMergeList(files) {
     const pdfFiles = files.filter(f => f.type === 'application/pdf');
-    if (pdfFiles.length === 0) {
-      alert('PDF 파일만 추가 가능합니다.');
-      return;
-    }
+    if (pdfFiles.length === 0) { alert('PDF 파일만 추가 가능합니다.'); return; }
     mergeFiles.push(...pdfFiles);
     renderMergeFileList();
   }
@@ -851,40 +865,22 @@
     });
   }
 
-  function removeMergeFile(index) {
-    mergeFiles.splice(index, 1);
-    renderMergeFileList();
-  }
+  function removeMergeFile(index) { mergeFiles.splice(index, 1); renderMergeFileList(); }
+  function clearMergeList() { mergeFiles = []; renderMergeFileList(); }
 
-  function clearMergeList() {
-    mergeFiles = [];
-    renderMergeFileList();
-  }
-
-  // 병합 탭 전용 드롭존 이벤트 바인딩
   const mergeDropzoneElem = document.getElementById('mergeDropzone');
   if (mergeDropzoneElem) {
-    mergeDropzoneElem.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      mergeDropzoneElem.classList.add('dragover');
-    });
-    mergeDropzoneElem.addEventListener('dragleave', () => {
-      mergeDropzoneElem.classList.remove('dragover');
-    });
+    mergeDropzoneElem.addEventListener('dragover', (e) => { e.preventDefault(); mergeDropzoneElem.classList.add('dragover'); });
+    mergeDropzoneElem.addEventListener('dragleave', () => { mergeDropzoneElem.classList.remove('dragover'); });
     mergeDropzoneElem.addEventListener('drop', (e) => {
       e.preventDefault();
       mergeDropzoneElem.classList.remove('dragover');
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        addFilesToMergeList(Array.from(e.dataTransfer.files));
-      }
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) addFilesToMergeList(Array.from(e.dataTransfer.files));
     });
   }
 
   async function startMergeProcess() {
-    if (mergeFiles.length < 2) {
-      alert('병합을 하려면 최소 2개 이상의 PDF 파일을 추가해 주세요.');
-      return;
-    }
+    if (mergeFiles.length < 2) { alert('병합을 하려면 최소 2개 이상의 PDF 파일을 추가해 주세요.'); return; }
 
     try {
       const { PDFDocument } = PDFLib;
@@ -905,7 +901,6 @@
       a.download = `merged_${Date.now()}.pdf`;
       a.click();
 
-      // PDF 병합 감사 로그 기록
       logUserAction('PDF 병합', `${mergeFiles.length}개 PDF 파일 병합 완료`);
       showToast(`${mergeFiles.length}개의 PDF 파일 병합이 완료되었습니다.`);
     } catch (err) {
@@ -914,7 +909,7 @@
     }
   }
 
-  /* --- 워터마크 탐지 알고리즘 --- */
+  /* --- 워터마크 탐지 --- */
   async function analyzeWatermarks() {
     textCandidates = [];
     imageCandidates = [];
@@ -933,23 +928,18 @@
           const pdfW = item.width || 50;
           const pdfH = item.height || 12;
 
-          if (!textMap.has(str)) {
-            textMap.set(str, []);
-          }
+          if (!textMap.has(str)) textMap.set(str, []);
           textMap.get(str).push({ page: p, pdfX, pdfY, pdfW, pdfH });
         }
       });
     }
 
     textMap.forEach((bboxes, text) => {
-      if (bboxes.length >= 2) {
-        textCandidates.push({ text, count: bboxes.length, bboxes });
-      }
+      if (bboxes.length >= 2) textCandidates.push({ text, count: bboxes.length, bboxes });
     });
 
     document.getElementById('textCandBadge').textContent = `(${textCandidates.length})`;
     document.getElementById('imgCandBadge').textContent = `(${imageCandidates.length})`;
-
     renderCandidates();
   }
 
@@ -1008,23 +998,14 @@
       });
     }
 
-    if (appliedCount === 0) {
-      showToast('선택된 워터마크 항목이 없습니다.');
-      return;
-    }
-
-    if (activePages.length > 0) {
-      syncOverlayBoxes(getCurrentPageNum());
-    }
-    
+    if (appliedCount === 0) { showToast('선택된 워터마크 항목이 없습니다.'); return; }
+    if (activePages.length > 0) syncOverlayBoxes(getCurrentPageNum());
     logUserAction('워터마크 삭제 적용', `선택된 워터마크 마스킹 처리 (${appliedCount}개 영역)`);
     showToast(`선택한 ${appliedCount}개 워터마크 영역이 마스킹 처리되었습니다.`);
   }
 
-  /* --- 렌더링 및 미리보기 --- */
-  function getCurrentPageNum() {
-    return activePages[currentActiveIndex];
-  }
+  /* --- 렌더링 및 레이어 구성 --- */
+  function getCurrentPageNum() { return activePages[currentActiveIndex]; }
 
   async function renderCurrentPage() {
     if (!pdfJsDoc || activePages.length === 0) return;
@@ -1051,29 +1032,29 @@
     syncOverlayBoxes(pageNum);
   }
 
+  /* --- [핵심 추가/수정] 4가지 기능 (마스킹, 텍스트, 이미지, 링크) 레이어 및 드래그 바인딩 --- */
   function syncOverlayBoxes(pageNum) {
     const overlay = document.getElementById('maskOverlay');
     overlay.innerHTML = '';
 
-    if (currentMainTab === 'masking' || currentMainTab === 'watermark' || currentMainTab === 'textEdit' || currentMainTab === 'imageEdit' || currentMainTab === 'linkEdit') {
+    const tabsToOverlay = ['watermark', 'masking', 'textEdit', 'imageEdit', 'linkEdit'];
+    if (tabsToOverlay.includes(currentMainTab)) {
       overlay.style.display = 'block';
     } else {
       overlay.style.display = 'none';
       return;
     }
 
+    // 1. 영역 마스킹 상자들
     const masks = manualMasks.get(pageNum) || [];
     masks.forEach(m => {
       const box = document.createElement('div');
       box.className = 'mask-box-element';
-      box.style.left = `${m.x}px`;
-      box.style.top = `${m.y}px`;
-      box.style.width = `${m.w}px`;
-      box.style.height = `${m.h}px`;
+      box.style.left = `${m.x}px`; box.style.top = `${m.y}px`;
+      box.style.width = `${m.w}px`; box.style.height = `${m.h}px`;
 
       const closeBtn = document.createElement('div');
-      closeBtn.className = 'mask-close-btn';
-      closeBtn.textContent = '✕';
+      closeBtn.className = 'mask-close-btn'; closeBtn.textContent = '✕';
       closeBtn.onclick = (e) => {
         e.stopPropagation();
         manualMasks.set(pageNum, masks.filter(item => item.id !== m.id));
@@ -1082,6 +1063,283 @@
       box.appendChild(closeBtn);
       overlay.appendChild(box);
     });
+
+    // 2. 텍스트 상자들
+    const texts = textBoxes.get(pageNum) || [];
+    texts.forEach(t => {
+      const box = document.createElement('div');
+      box.className = 'text-box-element' + (activeSelectedElement === t ? ' selected' : '');
+      box.style.left = `${t.x}px`; box.style.top = `${t.y}px`;
+      box.style.fontSize = `${t.fontSize}px`; box.style.color = t.color;
+      box.style.backgroundColor = t.bgColor; box.textContent = t.text || '텍스트 입력';
+
+      makeElementDraggable(box, t, pageNum);
+
+      box.onclick = (e) => {
+        e.stopPropagation();
+        activeSelectedElement = t;
+        document.getElementById('activeTextContent').value = t.text;
+        document.getElementById('activeFontSize').value = t.fontSize;
+        document.getElementById('activeTextColor').value = t.color;
+        document.getElementById('activeBgColor').value = t.bgColor;
+        syncOverlayBoxes(pageNum);
+      };
+
+      const closeBtn = document.createElement('div');
+      closeBtn.className = 'mask-close-btn'; closeBtn.textContent = '✕';
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        textBoxes.set(pageNum, texts.filter(item => item.id !== t.id));
+        if (activeSelectedElement === t) activeSelectedElement = null;
+        syncOverlayBoxes(pageNum);
+      };
+      box.appendChild(closeBtn);
+      overlay.appendChild(box);
+    });
+
+    // 3. 이미지 상자들
+    const imgs = imageBoxes.get(pageNum) || [];
+    imgs.forEach(imgData => {
+      const box = document.createElement('div');
+      box.className = 'img-box-element';
+      box.style.left = `${imgData.x}px`; box.style.top = `${imgData.y}px`;
+      box.style.width = `${imgData.w}px`; box.style.height = `${imgData.h}px`;
+
+      const imgTag = document.createElement('img');
+      imgTag.src = imgData.src;
+      box.appendChild(imgTag);
+
+      makeElementDraggable(box, imgData, pageNum);
+
+      const closeBtn = document.createElement('div');
+      closeBtn.className = 'mask-close-btn'; closeBtn.textContent = '✕';
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        imageBoxes.set(pageNum, imgs.filter(item => item.id !== imgData.id));
+        syncOverlayBoxes(pageNum);
+      };
+      box.appendChild(closeBtn);
+      overlay.appendChild(box);
+    });
+
+    // 4. 링크/이동 영역 상자들
+    const links = linkBoxes.get(pageNum) || [];
+    links.forEach(l => {
+      const box = document.createElement('div');
+      box.className = 'link-box-element' + (activeSelectedElement === l ? ' selected' : '');
+      box.style.left = `${l.x}px`; box.style.top = `${l.y}px`;
+      box.style.width = `${l.w}px`; box.style.height = `${l.h}px`;
+
+      const badge = document.createElement('div');
+      badge.className = 'link-tag-badge';
+      badge.textContent = l.type === 'url' ? `🔗 ${l.targetUrl}` : `📄 p.${l.targetPage}`;
+      box.appendChild(badge);
+
+      makeElementDraggable(box, l, pageNum);
+
+      box.onclick = (e) => {
+        e.stopPropagation();
+        activeSelectedElement = l;
+        document.getElementById('activeLinkType').value = l.type;
+        onLinkTypeSelectChange();
+        if (l.type === 'url') document.getElementById('activeLinkTargetUrl').value = l.targetUrl;
+        else document.getElementById('activeLinkTargetPage').value = l.targetPage;
+        syncOverlayBoxes(pageNum);
+      };
+
+      const closeBtn = document.createElement('div');
+      closeBtn.className = 'mask-close-btn'; closeBtn.textContent = '✕';
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        linkBoxes.set(pageNum, links.filter(item => item.id !== l.id));
+        if (activeSelectedElement === l) activeSelectedElement = null;
+        syncOverlayBoxes(pageNum);
+      };
+      box.appendChild(closeBtn);
+      overlay.appendChild(box);
+    });
+  }
+
+  // 요소 마우스 이동 드래그 공통 함수
+  function makeElementDraggable(elm, dataObj, pageNum) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    elm.onmousedown = (e) => {
+      if (e.target.classList.contains('mask-close-btn')) return;
+      e.stopPropagation();
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      document.onmouseup = () => {
+        document.onmouseup = null;
+        document.onmousemove = null;
+      };
+      document.onmousemove = (e2) => {
+        pos1 = pos3 - e2.clientX;
+        pos2 = pos4 - e2.clientY;
+        pos3 = e2.clientX;
+        pos4 = e2.clientY;
+        
+        let newX = elm.offsetLeft - pos1;
+        let newY = elm.offsetTop - pos2;
+        elm.style.left = newX + "px";
+        elm.style.top = newY + "px";
+        dataObj.x = newX;
+        dataObj.y = newY;
+      };
+    };
+  }
+
+  /* --- 영역 마스킹 직접 수동 드래그 생성 --- */
+  let isDrawingMask = false;
+  let startX = 0, startY = 0;
+  let currentMaskBox = null;
+
+  const overlayElem = document.getElementById('maskOverlay');
+  overlayElem.addEventListener('mousedown', (e) => {
+    if (currentMainTab !== 'masking') return;
+    if (e.target !== overlayElem) return;
+
+    isDrawingMask = true;
+    const rect = overlayElem.getBoundingClientRect();
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+
+    currentMaskBox = document.createElement('div');
+    currentMaskBox.className = 'mask-box-element';
+    currentMaskBox.style.left = `${startX}px`;
+    currentMaskBox.style.top = `${startY}px`;
+    currentMaskBox.style.width = '0px';
+    currentMaskBox.style.height = '0px';
+    overlayElem.appendChild(currentMaskBox);
+  });
+
+  overlayElem.addEventListener('mousemove', (e) => {
+    if (!isDrawingMask || !currentMaskBox) return;
+    const rect = overlayElem.getBoundingClientRect();
+    const curX = e.clientX - rect.left;
+    const curY = e.clientY - rect.top;
+
+    const w = Math.abs(curX - startX);
+    const h = Math.abs(curY - startY);
+    const left = Math.min(curX, startX);
+    const top = Math.min(curY, startY);
+
+    currentMaskBox.style.width = `${w}px`;
+    currentMaskBox.style.height = `${h}px`;
+    currentMaskBox.style.left = `${left}px`;
+    currentMaskBox.style.top = `${top}px`;
+  });
+
+  overlayElem.addEventListener('mouseup', () => {
+    if (!isDrawingMask || !currentMaskBox) return;
+    isDrawingMask = false;
+
+    const pageNum = getCurrentPageNum();
+    const w = parseFloat(currentMaskBox.style.width);
+    const h = parseFloat(currentMaskBox.style.height);
+    const x = parseFloat(currentMaskBox.style.left);
+    const y = parseFloat(currentMaskBox.style.top);
+
+    if (w > 5 && h > 5) {
+      if (!manualMasks.has(pageNum)) manualMasks.set(pageNum, []);
+      manualMasks.get(pageNum).push({
+        id: 'manual_mask_' + Date.now(), x, y, w, h
+      });
+      logUserAction('영역 마스킹 추가', `p.${pageNum} 페이지 영역 마스킹 추가`);
+    }
+    currentMaskBox = null;
+    syncOverlayBoxes(pageNum);
+  });
+
+  /* --- 텍스트 / 이미지 / 링크 제어 함수들 --- */
+  function addTextBoxOverCurrentPage() {
+    if (!pdfJsDoc) { alert('PDF 파일을 먼저 선택해 주세요.'); return; }
+    const pageNum = getCurrentPageNum();
+    if (!textBoxes.has(pageNum)) textBoxes.set(pageNum, []);
+
+    const newObj = {
+      id: 'text_' + Date.now(),
+      x: 50, y: 50, text: '내용 입력', fontSize: 16, color: '#000000', bgColor: '#ffffff'
+    };
+    textBoxes.get(pageNum).push(newObj);
+    activeSelectedElement = newObj;
+    logUserAction('텍스트 추가', `p.${pageNum} 페이지 텍스트 추가`);
+    syncOverlayBoxes(pageNum);
+  }
+
+  function updateActiveTextBox() {
+    if (!activeSelectedElement || !activeSelectedElement.id.startsWith('text_')) return;
+    activeSelectedElement.text = document.getElementById('activeTextContent').value;
+    activeSelectedElement.fontSize = document.getElementById('activeFontSize').value;
+    activeSelectedElement.color = document.getElementById('activeTextColor').value;
+    activeSelectedElement.bgColor = document.getElementById('activeBgColor').value;
+    syncOverlayBoxes(getCurrentPageNum());
+  }
+
+  function triggerImgInput() { document.getElementById('imageFileInput').click(); }
+  function onImageSelected(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const pageNum = getCurrentPageNum();
+      if (!imageBoxes.has(pageNum)) imageBoxes.set(pageNum, []);
+      imageBoxes.get(pageNum).push({
+        id: 'img_' + Date.now(), x: 60, y: 60, w: 150, h: 100, src: evt.target.result
+      });
+      logUserAction('이미지 삽입', `p.${pageNum} 페이지 외부 이미지 추가`);
+      syncOverlayBoxes(pageNum);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  function addLinkBoxOverCurrentPage() {
+    if (!pdfJsDoc) { alert('PDF 파일을 먼저 선택해 주세요.'); return; }
+    const pageNum = getCurrentPageNum();
+    if (!linkBoxes.has(pageNum)) linkBoxes.set(pageNum, []);
+
+    const newObj = {
+      id: 'link_' + Date.now(),
+      x: 70, y: 70, w: 120, h: 50, type: 'url', targetUrl: 'https://example.com', targetPage: 1
+    };
+    linkBoxes.get(pageNum).push(newObj);
+    activeSelectedElement = newObj;
+    logUserAction('링크 추가', `p.${pageNum} 페이지 이동 영역 추가`);
+    syncOverlayBoxes(pageNum);
+  }
+
+  function onLinkTypeSelectChange() {
+    const type = document.getElementById('activeLinkType').value;
+    document.getElementById('linkUrlGroup').style.display = type === 'url' ? 'flex' : 'none';
+    document.getElementById('linkPageGroup').style.display = type === 'page' ? 'flex' : 'none';
+    updateActiveLinkBox();
+  }
+
+  function updateActiveLinkBox() {
+    if (!activeSelectedElement || !activeSelectedElement.id.startsWith('link_')) return;
+    const type = document.getElementById('activeLinkType').value;
+    activeSelectedElement.type = type;
+    if (type === 'url') activeSelectedElement.targetUrl = document.getElementById('activeLinkTargetUrl').value;
+    else activeSelectedElement.targetPage = document.getElementById('activeLinkTargetPage').value;
+    syncOverlayBoxes(getCurrentPageNum());
+  }
+
+  function applyMaskToAllPages() {
+    const pageNum = getCurrentPageNum();
+    const currMasks = manualMasks.get(pageNum) || [];
+    if (currMasks.length === 0) { alert('현재 페이지에 설정된 마스킹 영역이 없습니다.'); return; }
+
+    activePages.forEach(p => {
+      if (!manualMasks.has(p)) manualMasks.set(p, []);
+      currMasks.forEach(m => {
+        manualMasks.get(p).push({
+          id: 'all_mask_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          x: m.x, y: m.y, w: m.w, h: m.h
+        });
+      });
+    });
+    logUserAction('일괄 마스킹', '전체 페이지 일괄 마스킹 적용');
+    showToast('현재 페이지의 마스킹이 전체 페이지에 일괄 적용되었습니다.');
   }
 
   function switchMainTab(tab) {
@@ -1096,7 +1354,7 @@
     if (activePages.length > 0) renderCurrentPage();
   }
 
-  /* --- [핵심 수정] 썸네일 렌더링 및 드래그 앤 드롭 이벤트 완전 구현 --- */
+  /* --- 썸네일 드래그 앤 드롭 순서 이동 --- */
   async function renderPageThumbnails() {
     const container = document.getElementById('pageGridContainer');
     container.innerHTML = '';
@@ -1111,57 +1369,34 @@
       card.setAttribute('draggable', 'true');
       card.dataset.index = i;
 
-      // 드래그 앤 드롭 이벤트 바인딩
       card.addEventListener('dragstart', (e) => {
-        draggedCardIndex = i;
-        card.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
+        draggedCardIndex = i; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move';
       });
-
       card.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        card.classList.add('drag-over');
+        e.preventDefault(); e.dataTransfer.dropEffect = 'move'; card.classList.add('drag-over');
       });
-
-      card.addEventListener('dragleave', () => {
-        card.classList.remove('drag-over');
-      });
-
+      card.addEventListener('dragleave', () => { card.classList.remove('drag-over'); });
       card.addEventListener('dragend', () => {
         card.classList.remove('dragging');
         document.querySelectorAll('.page-thumb-card').forEach(c => c.classList.remove('drag-over'));
       });
-
       card.addEventListener('drop', (e) => {
-        e.preventDefault();
-        card.classList.remove('drag-over');
-        if (draggedCardIndex !== null && draggedCardIndex !== i) {
-          movePagePosition(draggedCardIndex, i);
-        }
+        e.preventDefault(); card.classList.remove('drag-over');
+        if (draggedCardIndex !== null && draggedCardIndex !== i) movePagePosition(draggedCardIndex, i);
       });
 
       const thumbCanvas = document.createElement('canvas');
-      thumbCanvas.width = viewport.width;
-      thumbCanvas.height = viewport.height;
+      thumbCanvas.width = viewport.width; thumbCanvas.height = viewport.height;
       page.render({ canvasContext: thumbCanvas.getContext('2d'), viewport });
 
       const numLabel = document.createElement('div');
-      numLabel.className = 'page-thumb-num';
-      numLabel.textContent = `p.${pageNum}`;
+      numLabel.className = 'page-thumb-num'; numLabel.textContent = `p.${pageNum}`;
 
       const delBtn = document.createElement('div');
-      delBtn.className = 'page-thumb-del';
-      delBtn.textContent = '✕';
-      delBtn.onclick = (e) => {
-        e.stopPropagation();
-        deletePageAt(i);
-      };
+      delBtn.className = 'page-thumb-del'; delBtn.textContent = '✕';
+      delBtn.onclick = (e) => { e.stopPropagation(); deletePageAt(i); };
 
-      card.onclick = () => {
-        currentActiveIndex = i;
-        renderCurrentPage();
-      };
+      card.onclick = () => { currentActiveIndex = i; renderCurrentPage(); };
 
       card.appendChild(thumbCanvas);
       card.appendChild(numLabel);
@@ -1170,58 +1405,80 @@
     }
   }
 
-  // 페이지 순서 변경 함수
   function movePagePosition(fromIndex, toIndex) {
     const movedPage = activePages.splice(fromIndex, 1)[0];
     activePages.splice(toIndex, 0, movedPage);
-
-    // 현재 활성화된 페이지 인덱스 보정
     currentActiveIndex = toIndex;
-
-    logUserAction('페이지 순서 변경', `p.${movedPage} 페이지를 ${fromIndex + 1}번째에서 ${toIndex + 1}번째 위치로 이동`);
+    logUserAction('페이지 순서 변경', `p.${movedPage} 페이지 순서 변경`);
     renderPageThumbnails();
     renderCurrentPage();
-    showToast(`페이지 순서가 변경되었습니다 (p.${movedPage} → ${toIndex + 1}번째)`);
+    showToast(`페이지 순서가 변경되었습니다.`);
   }
 
   function deletePageAt(index) {
     const removedPageNum = activePages[index];
     activePages.splice(index, 1);
     if (currentActiveIndex >= activePages.length) currentActiveIndex = Math.max(0, activePages.length - 1);
-    
     logUserAction('페이지 삭제', `p.${removedPageNum} 페이지 삭제 완료`);
     renderPageThumbnails();
     renderCurrentPage();
     showToast('선택한 페이지가 삭제되었습니다.');
   }
 
-  /* --- PDF 저장 (다운로드 이력 기록 제외) --- */
+  /* --- PDF 최종 합성 및 저장 --- */
   async function processAndDownload() {
-    if (!rawBuffer) {
-      alert('수정할 PDF 파일을 먼저 로드해 주세요.');
-      return;
-    }
+    if (!rawBuffer) { alert('수정할 PDF 파일을 먼저 로드해 주세요.'); return; }
 
-    const { PDFDocument, rgb } = PDFLib;
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
     const srcDoc = await PDFDocument.load(rawBuffer);
     const pdfDoc = await PDFDocument.create();
+    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
     for (let i = 0; i < activePages.length; i++) {
       const origPageNum = activePages[i];
       const [copiedPage] = await pdfDoc.copyPages(srcDoc, [origPageNum - 1]);
-      
-      const masks = manualMasks.get(origPageNum) || [];
       const pageHeight = copiedPage.getHeight();
 
+      // 1. 마스킹 영역 칠하기
+      const masks = manualMasks.get(origPageNum) || [];
       masks.forEach(m => {
         copiedPage.drawRectangle({
-          x: m.x,
-          y: pageHeight - m.y - m.h,
-          width: m.w,
-          height: m.h,
+          x: m.x / renderZoomScale,
+          y: pageHeight - (m.y / renderZoomScale) - (m.h / renderZoomScale),
+          width: m.w / renderZoomScale,
+          height: m.h / renderZoomScale,
           color: rgb(1, 1, 1)
         });
       });
+
+      // 2. 텍스트 요소 합성
+      const texts = textBoxes.get(origPageNum) || [];
+      texts.forEach(t => {
+        copiedPage.drawText(t.text || '', {
+          x: t.x / renderZoomScale,
+          y: pageHeight - (t.y / renderZoomScale) - 15,
+          size: parseFloat(t.fontSize || 16) / renderZoomScale,
+          font: helveticaFont,
+          color: rgb(0, 0, 0)
+        });
+      });
+
+      // 3. 이미지 요소 합성
+      const imgs = imageBoxes.get(origPageNum) || [];
+      for (const imgData of imgs) {
+        let embeddedImg = null;
+        if (imgData.src.startsWith('data:image/png')) {
+          embeddedImg = await pdfDoc.embedPng(imgData.src);
+        } else {
+          embeddedImg = await pdfDoc.embedJpg(imgData.src);
+        }
+        copiedPage.drawImage(embeddedImg, {
+          x: imgData.x / renderZoomScale,
+          y: pageHeight - (imgData.y / renderZoomScale) - (imgData.h / renderZoomScale),
+          width: imgData.w / renderZoomScale,
+          height: imgData.h / renderZoomScale
+        });
+      }
 
       pdfDoc.addPage(copiedPage);
     }
@@ -1237,12 +1494,8 @@
     showToast('선명도가 개선된 PDF 파일이 정상적으로 다운로드되었습니다.');
   }
 
-  function prevPage() {
-    if (currentActiveIndex > 0) { currentActiveIndex--; renderCurrentPage(); }
-  }
-  function nextPage() {
-    if (currentActiveIndex < activePages.length - 1) { currentActiveIndex++; renderCurrentPage(); }
-  }
+  function prevPage() { if (currentActiveIndex > 0) { currentActiveIndex--; renderCurrentPage(); } }
+  function nextPage() { if (currentActiveIndex < activePages.length - 1) { currentActiveIndex++; renderCurrentPage(); } }
   function zoomIn() { renderZoomScale += 0.15; renderCurrentPage(); }
   function zoomOut() { if (renderZoomScale > 0.4) { renderZoomScale -= 0.15; renderCurrentPage(); } }
   function zoomReset() { renderZoomScale = 1.25; renderCurrentPage(); }
@@ -1256,10 +1509,7 @@
     renderCurrentPage();
   }
 
-  function undoLastAction() {
-    showToast('마지막 작업을 취소했습니다.');
-  }
-
+  function undoLastAction() { showToast('마지막 작업을 취소했습니다.'); }
   function showToast(msg) {
     const toast = document.getElementById('statusToast');
     toast.textContent = msg;
@@ -1267,9 +1517,7 @@
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    initAuthState();
-  });
+  window.addEventListener('DOMContentLoaded', () => { initAuthState(); });
 </script>
 </body>
 </html>

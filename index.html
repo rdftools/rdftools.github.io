@@ -1987,7 +1987,8 @@
 
     pdfDoc.registerFontkit(fontkit);
     const fontBytes = await fetch(
-      'https://cdn.jsdelivr.net/gh/google/fonts/ofl/nanumgothic/NanumGothic-Regular.ttf'
+      'https://cdn.jsdelivr.net/npm/@kfonts/nanum-gothic@0.2.0/src/NanumGothic.ttf'
+
     ).then(r => r.arrayBuffer());
     const helveticaFont = await pdfDoc.embedFont(fontBytes, { subset: true });
 

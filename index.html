@@ -8,6 +8,10 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+
+
+  </script>
   <style>
     :root {
       --primary: #007042;
@@ -1854,8 +1858,9 @@
 
   // Helvetica 는 한글을 인코딩하지 못해 save() 가 통째로 실패합니다.
   function toWinAnsiSafe(str) {
-    return String(str).replace(/[^\x00-\xFF]/g, '?');
+    return String(str);
   }
+
 
   /* --- PDF 최종 저장 --- */
   function openProgress(title) {
@@ -1949,7 +1954,12 @@
       usedFallback = true;
     }
 
-    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    pdfDoc.registerFontkit(fontkit);
+    const fontBytes = await fetch(
+      'https://cdn.jsdelivr.net/gh/google/fonts/ofl/nanumgothic/NanumGothic-Regular.ttf'
+    ).then(r => r.arrayBuffer());
+    const helveticaFont = await pdfDoc.embedFont(fontBytes, { subset: true });
+
 
     const allPages = pdfDoc.getPages();
     // 재구성한 경우 이미 선택된 페이지만 담겨 있으므로 제거 단계를 건너뜀

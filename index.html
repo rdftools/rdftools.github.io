@@ -1215,31 +1215,31 @@
   function makeElementResizable(elm, handle, dataObj, pageNum) {
     handle.onmousedown = (e) => {
       e.stopPropagation();
-      let startX = e.clientX;
-      let startY = e.clientY;
-      let startWidth = parseInt(document.defaultView.getComputedStyle(elm).width, 10);
-      let startHeight = parseInt(document.defaultView.getComputedStyle(elm).height, 10);
+      e.preventDefault();
+      const Z = renderZoomScale;
+      const startX = e.clientX, startY = e.clientY;
+      const startW = dataObj.w * Z, startH = dataObj.h * Z;
+      const lockRatio = !!dataObj.ratio;     // 이미지 박스만 ratio 를 가짐
 
       document.onmousemove = (e2) => {
         e2.preventDefault();
-        let newW = startWidth + e2.clientX - startX;
-        let newH = startHeight + e2.clientY - startY;
-        if (newW > 20) {
-          elm.style.width = newW + 'px';
-          dataObj.w = newW;
-        }
-        if (newH > 20) {
-          elm.style.height = newH + 'px';
-          dataObj.h = newH;
-        }
+        let newW = startW + (e2.clientX - startX);
+        let newH = startH + (e2.clientY - startY);
+
+        // 이미지는 기본적으로 비율 고정, Shift 를 누르면 자유 변형
+        if (lockRatio && !e2.shiftKey) newH = newW / dataObj.ratio;
+
+        if (newW < 20 || newH < 20) return;
+        elm.style.width = newW + 'px';
+        elm.style.height = newH + 'px';
+        dataObj.w = newW / Z;                // 저장은 항상 PDF pt 기준
+        dataObj.h = newH / Z;
       };
 
-      document.onmouseup = () => {
-        document.onmousemove = null;
-        document.onmouseup = null;
-      };
+      document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; };
     };
   }
+
 
   /* --- 영역 마스킹 수동 드래그 생성 --- */
   let isDrawingMask = false;

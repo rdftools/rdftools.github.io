@@ -1840,11 +1840,20 @@
     return String(str).replace(/[^\x00-\xFF]/g, '?');
   }
 
-  /* --- PDF 최종 합성 및 저장 (배율 좌표 및 크기 일치 완벽 보정) --- */
   async function processAndDownload() {
-    if (!rawBuffer) { alert('수정할 PDF 파일을 먼저 로드해 주세요.'); return; }
+    try {
+      await processAndDownloadInner();
+    } catch (err) {
+      console.error('다운로드 실패:', err);
+      alert('다운로드 실패\n\n' + (err && err.message ? err.message : err));
+    }
+  }
+
+  async function processAndDownloadInner() {
+    if (!rawBuffer) { alert('먼저 PDF 파일을 불러와 주세요.'); return; }
 
     const { PDFDocument, rgb, StandardFonts } = PDFLib;
+
     const srcDoc = await PDFDocument.load(rawBuffer, { ignoreEncryption: true });
 
     const pdfDoc = await PDFDocument.create();

@@ -1843,7 +1843,8 @@
   /* --- PDF 최종 저장 --- */
 
   // 암호화 PDF 대응: pdf.js 로 렌더한 뒤 이미지 기반 PDF 로 재구성
-  async function buildDecryptedBuffer(scale = 2) {
+  async function buildDecryptedBuffer(scale = 3.0) {
+
     const { PDFDocument } = PDFLib;
     const outDoc = await PDFDocument.create();
 
@@ -1863,7 +1864,8 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       await page.render({ canvasContext: ctx, viewport }).promise;
 
-      const jpg = canvas.toDataURL('image/jpeg', 0.92);
+      const jpg = canvas.toDataURL('image/jpeg', 0.98);
+
       const img = await outDoc.embedJpg(jpg);
       const outPage = outDoc.addPage([base.width, base.height]);
       outPage.drawImage(img, { x: 0, y: 0, width: base.width, height: base.height });
@@ -1899,7 +1901,8 @@
       pdfDoc.getPages();   // 페이지 트리가 멀쩡한지 여기서 검증
     } catch (e) {
       console.warn('원본 구조 손상/암호화 → 재구성 방식으로 전환', e);
-      const rebuilt = await buildDecryptedBuffer(2);
+      const rebuilt = await buildDecryptedBuffer();
+
       pdfDoc = await PDFDocument.load(rebuilt);
       usedFallback = true;
     }

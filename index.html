@@ -1854,26 +1854,44 @@
     if (!rawBuffer) { alert('먼저 PDF 파일을 불러와 주세요.'); return; }
 
     const { PDFDocument, rgb, StandardFonts } = PDFLib;
-    const pdfDoc = await PDFDocument.load(rawBuffer, {
-      ignoreEncryption: true,
-      throwOnInvalidObject: false,
-      updateMetadata: false
-    });
+    let pdfDoc;
+    let usedFallback = false;
+
+    try {
+      pdfDoc = await PDFDocument.load(rawBuffer, {
+        ignoreEncryption: true,
+        throwOnInvalidObject: false,
+        updateMetadata: false
+      });
+      pdfDoc.getPages();   // 페이지 트리가 멀쩡한지 여기서 검증
+    } catch (e) {
+      console.warn('원본 구조 손상/암호화 → 재구성 방식으로 전환', e);
+      const rebuilt = await buildDecryptedBuffer(2);
+      pdfDoc = await PDFDocument.load(rebuilt);
+      usedFallback = true;
+    }
+
     const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-    // 원본 페이지를 그대로 쓰고, 빠진 페이지는 뒤에서 제거 (copyPages 미사용)
     const allPages = pdfDoc.getPages();
-    const keep = activePages.slice();
+    // 재구성한 경우 이미 선택된 페이지만 담겨 있으므로 제거 단계를 건너뜀
+    const keep = usedFallback
+      ? activePages.slice()
+      : activePages.slice();
 
-    for (let i = allPages.length; i >= 1; i--) {
-      if (!keep.includes(i)) pdfDoc.removePage(i - 1);
+    if (!usedFallback) {
+      for (let i = allPages.length; i >= 1; i--) {
+        if (!keep.includes(i)) pdfDoc.removePage(i - 1);
+      }
     }
+
 
     const createdPages = [];
 
     for (let i = 0; i < keep.length; i++) {
       const origPageNum = keep[i];
-      const copiedPage = allPages[origPageNum - 1];
+      const copiedPage = usedFallback ? allPages[i] : allPages[origPageNum - 1];
+
       const pageHeight = copiedPage.getHeight();
 
 

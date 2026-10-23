@@ -270,6 +270,23 @@
     <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
   </div>
 </div>
+<!-- 다운로드 진행률 모달 -->
+<div class="modal-overlay" id="progressModal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-title" id="progressTitle">PDF 생성 중...</div>
+    <div class="modal-desc" id="progressDesc">잠시만 기다려 주세요.</div>
+
+    <div style="width:100%; height:14px; background:#e5e7eb; border-radius:8px; overflow:hidden;">
+      <div id="progressBarFill"
+           style="width:0%; height:100%; background:linear-gradient(90deg, var(--accent-green), var(--primary)); transition:width 0.25s ease;"></div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; width:100%; font-size:0.82rem; color:#6b7280;">
+      <span id="progressStep">준비 중</span>
+      <span id="progressPercent" style="font-weight:700; color:var(--primary);">0%</span>
+    </div>
+  </div>
+</div>
 
 <!-- 관리자 전용 일자별/계정별 감사 로그 모달 팝업 -->
 <div class="modal-overlay" id="adminModal">
@@ -1841,6 +1858,26 @@
   }
 
   /* --- PDF 최종 저장 --- */
+  function openProgress(title) {
+    document.getElementById('progressTitle').textContent = title || 'PDF 생성 중...';
+    document.getElementById('progressBarFill').style.width = '0%';
+    document.getElementById('progressPercent').textContent = '0%';
+    document.getElementById('progressStep').textContent = '준비 중';
+    document.getElementById('progressModal').style.display = 'flex';
+  }
+
+  function setProgress(percent, stepText) {
+    const p = Math.max(0, Math.min(100, Math.round(percent)));
+    document.getElementById('progressBarFill').style.width = p + '%';
+    document.getElementById('progressPercent').textContent = p + '%';
+    if (stepText) document.getElementById('progressStep').textContent = stepText;
+    // 브라우저가 화면을 다시 그릴 틈을 준다 (이게 없으면 막대가 안 움직임)
+    return new Promise(r => setTimeout(r, 0));
+  }
+
+  function closeProgress() {
+    document.getElementById('progressModal').style.display = 'none';
+  }
 
   // 암호화 PDF 대응: pdf.js 로 렌더한 뒤 이미지 기반 PDF 로 재구성
   async function buildDecryptedBuffer(scale = 3.0) {
@@ -1850,7 +1887,9 @@
 
     for (let i = 0; i < activePages.length; i++) {
       const pageNum = activePages[i];
-      showToast(`암호 해제 변환 중... (${i + 1}/${activePages.length})`);
+      await setProgress((i / activePages.length) * 70,
+                        `고해상도 변환 ${i + 1} / ${activePages.length} 페이지`);
+
 
       const page = await pdfJsDoc.getPage(pageNum);
       const base = page.getViewport({ scale: 1 });
@@ -1875,15 +1914,18 @@
   }
 
   async function processAndDownload() {
+    openProgress('PDF 생성 중...');
     try {
       await processAndDownloadInner();
-
+      await setProgress(100, '완료');
+      setTimeout(closeProgress, 600);
     } catch (err) {
+      closeProgress();
       console.error('다운로드 실패:', err);
       alert('다운로드 실패\n\n' + (err && err.stack ? err.stack : err));
-
     }
   }
+
 
   async function processAndDownloadInner() {
     if (!rawBuffer) { alert('먼저 PDF 파일을 불러와 주세요.'); return; }
@@ -1927,8 +1969,10 @@
     for (let i = 0; i < keep.length; i++) {
       const origPageNum = keep[i];
       const copiedPage = usedFallback ? allPages[i] : allPages[origPageNum - 1];
-
       const pageHeight = copiedPage.getHeight();
+      if (i % 5 === 0) await setProgress(70 + (i / keep.length) * 25,
+                                         `편집 적용 ${i + 1} / ${keep.length} 페이지`);
+
 
 
       // 1. 마스킹
@@ -2031,7 +2075,9 @@
       });
     });
 
+    await setProgress(96, '파일 저장 중...');
     const pdfBytes = await pdfDoc.save();
+
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

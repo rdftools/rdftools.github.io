@@ -1329,21 +1329,72 @@
   }
 
   function triggerImgInput() { document.getElementById('imageFileInput').click(); }
-  function onImageSelected(e) {
+
+  function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (evt) => resolve(evt.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // PNG/JPEG 가 아니면(WebP, GIF, BMP 등) PNG 로 변환 + 원본 픽셀 크기 반환
+  function normalizeImage(dataUrl) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const isPng = dataUrl.startsWith('data:image/png');
+        const isJpg = dataUrl.startsWith('data:image/jpeg') || dataUrl.startsWith('data:image/jpg');
+        if (isPng || isJpg) {
+          resolve({ src: dataUrl, naturalW: img.naturalWidth, naturalH: img.naturalHeight });
+          return;
+        }
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img, 0, 0);
+        resolve({ src: c.toDataURL('image/png'), naturalW: img.naturalWidth, naturalH: img.naturalHeight });
+      };
+      img.onerror = () => reject(new Error('이미지 로드 실패'));
+      img.src = dataUrl;
+    });
+  }
+
+  async function onImageSelected(e) {
     const file = e.target.files[0];
+    e.target.value = '';
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
+    if (!pdfJsDoc) { alert('먼저 PDF 파일을 불러와 주세요.'); return; }
+
+    try {
       const pageNum = getCurrentPageNum();
+      const page = await pdfJsDoc.getPage(pageNum);
+      const base = page.getViewport({ scale: 1 });        // PDF 원본 크기(pt)
+
+      const dataUrl = await readFileAsDataURL(file);
+      const { src, naturalW, naturalH } = await normalizeImage(dataUrl);
+
+      const ratio = naturalW / naturalH;                   // 원본 가로세로비
+      let w = Math.min(naturalW, base.width * 0.4);        // 페이지 폭의 40% 이내
+      let h = w / ratio;
+      if (h > base.height * 0.4) { h = base.height * 0.4; w = h * ratio; }
+
       if (!imageBoxes.has(pageNum)) imageBoxes.set(pageNum, []);
       imageBoxes.get(pageNum).push({
-        id: 'img_' + Date.now(), x: 60, y: 60, w: 150, h: 100, src: evt.target.result
+        id: 'img_' + Date.now(),
+        x: 60, y: 60,                                      // PDF pt 기준 좌표
+        w: Math.round(w), h: Math.round(h),
+        ratio, src
       });
-      logUserAction('이미지 삽입', `p.${pageNum} 페이지 외부 이미지 추가`);
+
+      logUserAction('이미지삽입', `p.${pageNum} 이미지 추가 (${naturalW}x${naturalH})`);
       syncOverlayBoxes(pageNum);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
+      showToast('이미지를 원본 비율로 삽입했습니다.');
+    } catch (err) {
+      console.error(err);
+      alert('이미지를 불러오지 못했습니다.');
+    }
   }
 
   function addLinkBoxOverCurrentPage() {

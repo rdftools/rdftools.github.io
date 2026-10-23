@@ -1183,40 +1183,84 @@
     renderCandidates();
   }
 
-  async function applyCheckedWatermarks() {
-    let appliedCount = 0;
-    const PAD = 1.5; // 경계선 잔상 방지용 여백(pt)
+  // 구/신 버전 좌표 키를 모두 흡수해서 {x,y,w,h} 숫자로 정규화
+  function normalizeBBox(b) {
+    const x = Number(b.x !== undefined ? b.x : b.pdfX);
+    const y = Number(b.y !== undefined ? b.y : b.pdfY);
+    const w = Number(b.w !== undefined ? b.w : b.pdfW);
+    const h = Number(b.h !== undefined ? b.h : b.pdfH);
+    if (![x, y, w, h].every(Number.isFinite) || w <= 0 || h <= 0) return null;
+    return { x, y, w, h };
+  }
 
-    const pushMask = (bbox, prefix) => {
+  async function applyCheckedWatermarks() {
+    if (!pdfJsDoc) { alert('먼저 PDF 파일을 불러와 주세요.'); return; }
+
+    let appliedCount = 0;
+    let skipped = 0;
+    const touchedPages = new Set();
+    const PAD = 1.5;   // 글자 외곽선 잔상 방지 여백(pt)
+
+    const pushMask = (bbox, tag) => {
+      const n = normalizeBBox(bbox);
+      if (!n) { skipped++; return; }
+
       const pageNum = bbox.page;
       if (!manualMasks.has(pageNum)) manualMasks.set(pageNum, []);
-      manualMasks.get(pageNum).push({
-        id: prefix + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        x: bbox.x - PAD,
-        y: bbox.y - PAD,
-        w: bbox.w + PAD * 2,
-        h: bbox.h + PAD * 2
+      const list = manualMasks.get(pageNum);
+
+      // 같은 영역 중복 적용 방지 (버튼 두 번 눌러도 안 쌓임)
+      const dup = list.some(m =>
+        Math.abs(m.x - (n.x - PAD)) < 1 &&
+        Math.abs(m.y - (n.y - PAD)) < 1 &&
+        Math.abs(m.w - (n.w + PAD * 2)) < 1
+      );
+      if (dup) return;
+
+      list.push({
+        id: tag + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        x: n.x - PAD,
+        y: n.y - PAD,
+        w: n.w + PAD * 2,
+        h: n.h + PAD * 2
       });
+      touchedPages.add(pageNum);
       appliedCount++;
     };
 
-    if (currentSubTab === 'text') {
-      textCandidates.forEach((cand, idx) => {
-        const chk = document.getElementById(`wm_text_check_${idx}`);
-        if (chk && chk.checked) cand.bboxes.forEach(b => pushMask(b, 'wm_txt_'));
-      });
-    } else {
-      imageCandidates.forEach((cand, idx) => {
-        const chk = document.getElementById(`wm_img_check_${idx}`);
-        if (chk && chk.checked) cand.bboxes.forEach(b => pushMask(b, 'wm_img_'));
-      });
+    const pool = currentSubTab === 'text' ? textCandidates : imageCandidates;
+    const prefix = currentSubTab === 'text' ? 'wm_text_check_' : 'wm_img_check_';
+    const tag = currentSubTab === 'text' ? 'wm_txt_' : 'wm_img_';
+
+    let checkedAny = false;
+    pool.forEach((cand, idx) => {
+      const chk = document.getElementById(prefix + idx);
+      if (!chk || !chk.checked) return;
+      checkedAny = true;
+      cand.bboxes.forEach(b => pushMask(b, tag));
+    });
+
+    if (!checkedAny) { showToast('체크된 워터마크 후보가 없습니다.'); return; }
+
+    if (appliedCount === 0) {
+      console.warn('좌표 정규화 실패 건수:', skipped, pool);
+      alert('좌표를 읽지 못했습니다. PDF를 다시 불러온 뒤 시도해 주세요.');
+      return;
     }
 
-    if (appliedCount === 0) { showToast('선택된 항목이 없습니다.'); return; }
-    if (activePages.length > 0) syncOverlayBoxes(getCurrentPageNum());
-    logUserAction('워터마크 제거', `선택 워터마크 마스킹 (${appliedCount}건)`);
-    showToast(`총 ${appliedCount}개 영역에 마스킹을 적용했습니다.`);
+    // 적용된 페이지가 현재 화면에 없으면 첫 적용 페이지로 이동시켜 바로 확인
+    const curPage = getCurrentPageNum();
+    if (!touchedPages.has(curPage)) {
+      const firstPage = Math.min(...touchedPages);
+      const idx = activePages.indexOf(firstPage);
+      if (idx >= 0) currentActiveIndex = idx;
+    }
+    await renderCurrentPage();
+
+    logUserAction('워터마크 제거', `선택 워터마크 마스킹 (${appliedCount}건 / ${touchedPages.size}p)`);
+    showToast(`${touchedPages.size}개 페이지, 총 ${appliedCount}개 영역에 마스킹을 적용했습니다.`);
   }
+
 
   /* --- 렌더링 및 레이어 구성 --- */
   function getCurrentPageNum() { return activePages[currentActiveIndex]; }

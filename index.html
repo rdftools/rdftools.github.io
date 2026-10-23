@@ -1021,12 +1021,34 @@
     }).filter(L => L.text.length > 1);
   }
 
+  // 위치는 무시하고 "크기"만으로 묶는다. 버킷 반올림 대신 대표값 비교라 경계 문제가 없음
+  function clusterBySize(instances) {
+    const clusters = [];
+    instances.forEach(im => {
+      const c = clusters.find(c =>
+        Math.abs(c.w - im.w) <= Math.max(2, c.w * 0.03) &&
+        Math.abs(c.h - im.h) <= Math.max(2, c.h * 0.03)
+      );
+      if (c) {
+        c.bboxes.push(im);
+        c.pages.add(im.page);
+      } else {
+        clusters.push({ w: im.w, h: im.h, pages: new Set([im.page]), bboxes: [im] });
+      }
+    });
+    clusters.forEach(c => {
+      c.w = c.bboxes.reduce((s, b) => s + b.w, 0) / c.bboxes.length;
+      c.h = c.bboxes.reduce((s, b) => s + b.h, 0) / c.bboxes.length;
+    });
+    return clusters;
+  }
+
   async function analyzeWatermarks() {
     textCandidates = [];
     imageCandidates = [];
 
     const textMap = new Map();
-    const imgMap = new Map();
+    const allImgInstances = [];        // ★ Map 대신 평면 배열로 모은다
 
     for (let p = 1; p <= totalPages; p++) {
       if (p === 1 || p % 10 === 0) showToast(`워터마크 분석 중... (${p}/${totalPages})`);
@@ -1035,7 +1057,7 @@
       const vp = page.getViewport({ scale: 1 });
       const pageArea = vp.width * vp.height;
 
-      // --- 텍스트 (줄 단위) ---
+      // --- 텍스트 (줄 단위) --- 기존과 동일
       const tc = await page.getTextContent();
       mergeTextItemsIntoLines(tc.items, vp.height).forEach(L => {
         if (!textMap.has(L.text)) {
@@ -1046,48 +1068,47 @@
         e.bboxes.push({ page: p, x: L.x, y: L.y, w: L.w, h: L.h });
       });
 
-      // --- 이미지 (위치 + 크기 서명으로 반복 판정) ---
+      // --- 이미지: 전부 모아두고 나중에 크기로 클러스터링 ---
       const imgs = await collectPageImages(page, vp.height);
       imgs.forEach(im => {
-        if (im.w * im.h > pageArea * 0.9) return; // 페이지 전면 배경/스캔본은 제외
-
-        const key = `${Math.round(im.w / 2) * 2}x${Math.round(im.h / 2) * 2}` +
-                    `@${Math.round(im.x / 4) * 4},${Math.round(im.y / 4) * 4}`;
-        if (!imgMap.has(key)) {
-          imgMap.set(key, { key, w: im.w, h: im.h, pages: new Set(), bboxes: [] });
-        }
-        const e = imgMap.get(key);
-        e.pages.add(p);
-        e.bboxes.push({ page: p, x: im.x, y: im.y, w: im.w, h: im.h });
+        if (im.w * im.h > pageArea * 0.9) return;   // 전면 배경/스캔본 제외
+        allImgInstances.push({ page: p, x: im.x, y: im.y, w: im.w, h: im.h });
       });
     }
 
-    const MIN_PAGES = Math.max(2, Math.floor(totalPages * 0.3)); // 30% 이상 페이지에 반복
+    const MIN_PAGES = Math.max(2, Math.round(totalPages * 0.1));  // ★ 30% → 10%
 
     textMap.forEach(e => {
       if (e.pages.size >= MIN_PAGES) {
         textCandidates.push({
-          text: e.text,
-          pageCount: e.pages.size,
-          count: e.bboxes.length,
-          bboxes: e.bboxes
+          text: e.text, pageCount: e.pages.size,
+          count: e.bboxes.length, bboxes: e.bboxes
         });
       }
     });
     textCandidates.sort((a, b) => b.pageCount - a.pageCount);
 
-    imgMap.forEach(e => {
-      if (e.pages.size >= MIN_PAGES) {
+    clusterBySize(allImgInstances).forEach(c => {
+      if (c.pages.size >= MIN_PAGES) {
+        const pageList = [...c.pages].sort((a, b) => a - b);
         imageCandidates.push({
-          key: e.key,
-          w: e.w,
-          h: e.h,
-          pageCount: e.pages.size,
-          bboxes: e.bboxes
+          w: c.w, h: c.h,
+          pageCount: c.pages.size,
+          pageList,
+          missingPages: Array.from({ length: totalPages }, (_, i) => i + 1)
+                             .filter(p => !c.pages.has(p)),
+          bboxes: c.bboxes
         });
       }
     });
     imageCandidates.sort((a, b) => b.pageCount - a.pageCount);
+
+    document.getElementById('textCandBadge').textContent = `(${textCandidates.length})`;
+    document.getElementById('imgCandBadge').textContent = `(${imageCandidates.length})`;
+    renderCandidates();
+    showToast(`분석 완료 — 텍스트 ${textCandidates.length}건 / 반복 이미지 ${imageCandidates.length}건`);
+  }
+
 
     document.getElementById('textCandBadge').textContent = `(${textCandidates.length})`;
     document.getElementById('imgCandBadge').textContent = `(${imageCandidates.length})`;
@@ -1161,9 +1182,17 @@
             <span class="candidate-text" style="font-weight:500;">
               ${Math.round(cand.w)} × ${Math.round(cand.h)} pt<br>
               <span style="font-size:0.78rem; color:#6b7280;">
-                첫 등장 p.${cand.bboxes[0].page}
+                p.${cand.pageList[0]} ~ p.${cand.pageList[cand.pageList.length - 1]}
+                (총 ${cand.bboxes.length}곳)
               </span>
+              ${cand.missingPages.length
+                ? `<br><span style="font-size:0.75rem; color:#b45309;">
+                     미탐지 ${cand.missingPages.length}p:
+                     ${cand.missingPages.slice(0, 8).join(', ')}${cand.missingPages.length > 8 ? '…' : ''}
+                   </span>`
+                : ''}
             </span>
+
           </div>
           <span class="candidate-count" style="${strong}">
             ${cand.pageCount}/${totalPages}p (${ratio}%)

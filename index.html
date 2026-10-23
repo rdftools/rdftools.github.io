@@ -1037,6 +1037,8 @@
     const overlay = document.getElementById('maskOverlay');
     overlay.innerHTML = '';
 
+    const Z = renderZoomScale;   // ★ 추가: 데이터는 PDF pt, 화면 표시는 pt × Z
+
     const tabsToOverlay = ['watermark', 'masking', 'textEdit', 'imageEdit', 'linkEdit'];
     if (tabsToOverlay.includes(currentMainTab)) {
       overlay.style.display = 'block';
@@ -1045,13 +1047,13 @@
       return;
     }
 
-    // 1. 영역 마스킹
+    // 1. 마스킹 박스
     const masks = manualMasks.get(pageNum) || [];
     masks.forEach(m => {
       const box = document.createElement('div');
       box.className = 'mask-box-element';
-      box.style.left = `${m.x}px`; box.style.top = `${m.y}px`;
-      box.style.width = `${m.w}px`; box.style.height = `${m.h}px`;
+      box.style.left = `${m.x * Z}px`; box.style.top = `${m.y * Z}px`;          // ★
+      box.style.width = `${m.w * Z}px`; box.style.height = `${m.h * Z}px`;      // ★
 
       makeElementDraggable(box, m, pageNum);
 
@@ -1071,14 +1073,16 @@
       overlay.appendChild(box);
     });
 
-    // 2. 텍스트 상자
+    // 2. 텍스트 박스
     const texts = textBoxes.get(pageNum) || [];
     texts.forEach(t => {
       const box = document.createElement('div');
       box.className = 'text-box-element' + (activeSelectedElement === t ? ' selected' : '');
-      box.style.left = `${t.x}px`; box.style.top = `${t.y}px`;
-      box.style.fontSize = `${t.fontSize}px`; box.style.color = t.color;
-      box.style.backgroundColor = t.bgColor; box.textContent = t.text || '텍스트 입력';
+      box.style.left = `${t.x * Z}px`; box.style.top = `${t.y * Z}px`;          // ★
+      box.style.fontSize = `${parseFloat(t.fontSize) * Z}px`;                   // ★ 글자도 함께 확대
+      box.style.padding = `${4 * Z}px ${8 * Z}px`;                              // ★ padding 도 비례 (출력 보정식과 일치)
+      box.style.color = t.color;
+      box.style.backgroundColor = t.bgColor; box.textContent = t.text || '텍스트';
 
       makeElementDraggable(box, t, pageNum);
 
@@ -1105,16 +1109,18 @@
       overlay.appendChild(box);
     });
 
-    // 3. 이미지 상자
+    // 3. 이미지 박스
     const imgs = imageBoxes.get(pageNum) || [];
     imgs.forEach(imgData => {
       const box = document.createElement('div');
       box.className = 'img-box-element';
-      box.style.left = `${imgData.x}px`; box.style.top = `${imgData.y}px`;
-      box.style.width = `${imgData.w}px`; box.style.height = `${imgData.h}px`;
+      box.style.left = `${imgData.x * Z}px`; box.style.top = `${imgData.y * Z}px`;        // ★
+      box.style.width = `${imgData.w * Z}px`; box.style.height = `${imgData.h * Z}px`;    // ★
 
       const imgTag = document.createElement('img');
       imgTag.src = imgData.src;
+      imgTag.style.objectFit = 'fill';   // ★ 박스 자체가 원본 비율이므로 fill 로 두면 왜곡 없음
+      imgTag.draggable = false;          // ★ 브라우저 기본 이미지 드래그 차단(이동 끊김 방지)
       box.appendChild(imgTag);
 
       makeElementDraggable(box, imgData, pageNum);
@@ -1135,18 +1141,18 @@
       overlay.appendChild(box);
     });
 
-    // 4. 링크 상자
+    // 4. 링크 박스
     const links = linkBoxes.get(pageNum) || [];
     links.forEach(l => {
       const box = document.createElement('div');
       box.className = 'link-box-element' + (activeSelectedElement === l ? ' selected' : '');
-      box.style.left = `${l.x}px`; box.style.top = `${l.y}px`;
-      box.style.width = `${l.w}px`; box.style.height = `${l.h}px`;
+      box.style.left = `${l.x * Z}px`; box.style.top = `${l.y * Z}px`;          // ★
+      box.style.width = `${l.w * Z}px`; box.style.height = `${l.h * Z}px`;      // ★
 
       const badge = document.createElement('div');
       badge.className = 'link-tag-badge';
       badge.id = `link_badge_${l.id}`;
-      badge.textContent = l.type === 'url' ? `🔗 ${l.targetUrl || 'URL주소'}` : `📄 p.${l.targetPage || '1'}`;
+      badge.textContent = l.type === 'url' ? `🔗 ${l.targetUrl || 'URL'}` : `📄 p.${l.targetPage || '1'}`;
       box.appendChild(badge);
 
       makeElementDraggable(box, l, pageNum);
@@ -1164,7 +1170,7 @@
         onLinkTypeSelectChange();
         if (l.type === 'url') document.getElementById('activeLinkTargetUrl').value = l.targetUrl || '';
         else document.getElementById('activeLinkTargetPage').value = l.targetPage || 1;
-        
+
         document.querySelectorAll('.link-box-element').forEach(el => el.classList.remove('selected'));
         box.classList.add('selected');
       });
@@ -1181,6 +1187,7 @@
       overlay.appendChild(box);
     });
   }
+
 
   function makeElementDraggable(elm, dataObj, pageNum) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
@@ -1201,8 +1208,9 @@
         let newY = elm.offsetTop - pos2;
         elm.style.left = newX + "px";
         elm.style.top = newY + "px";
-        dataObj.x = newX;
-        dataObj.y = newY;
+        dataObj.x = newX / renderZoomScale;   // ★ pt 로 환산해 저장
+        dataObj.y = newY / renderZoomScale;
+
       };
 
       document.onmouseup = () => {
@@ -1293,10 +1301,13 @@
     const y = parseFloat(currentMaskBox.style.top);
 
     if (w > 5 && h > 5) {
+      const Z = renderZoomScale;
       if (!manualMasks.has(pageNum)) manualMasks.set(pageNum, []);
       manualMasks.get(pageNum).push({
-        id: 'manual_mask_' + Date.now(), x, y, w, h
+        id: 'manual_mask_' + Date.now(),
+        x: x / Z, y: y / Z, w: w / Z, h: h / Z
       });
+
       logUserAction('영역 마스킹 추가', `p.${pageNum} 페이지 영역 마스킹 추가`);
     }
     currentMaskBox = null;
@@ -1532,6 +1543,17 @@
     renderCurrentPage();
     showToast('선택한 페이지가 삭제되었습니다.');
   }
+  function hexToRgb(hex) {
+    const { rgb } = PDFLib;
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '#000000');
+    if (!m) return rgb(0, 0, 0);
+    return rgb(parseInt(m[1],16)/255, parseInt(m[2],16)/255, parseInt(m[3],16)/255);
+  }
+
+  // Helvetica 는 한글을 인코딩하지 못해 save() 가 통째로 실패합니다.
+  function toWinAnsiSafe(str) {
+    return String(str).replace(/[^\x00-\xFF]/g, '?');
+  }
 
   /* --- PDF 최종 합성 및 저장 (배율 좌표 및 크기 일치 완벽 보정) --- */
   async function processAndDownload() {
@@ -1549,14 +1571,14 @@
       const [copiedPage] = await pdfDoc.copyPages(srcDoc, [origPageNum - 1]);
       const pageHeight = copiedPage.getHeight();
 
-      // 1. 마스킹
+      // 1. 마스킹 (데이터가 이미 pt 이므로 변환 불필요)
       const masks = manualMasks.get(origPageNum) || [];
       masks.forEach(m => {
         copiedPage.drawRectangle({
-          x: m.x / renderZoomScale,
-          y: pageHeight - (m.y / renderZoomScale) - (m.h / renderZoomScale),
-          width: m.w / renderZoomScale,
-          height: m.h / renderZoomScale,
+          x: m.x,
+          y: pageHeight - m.y - m.h,
+          width: m.w,
+          height: m.h,
           color: rgb(1, 1, 1)
         });
       });
@@ -1564,35 +1586,29 @@
       // 2. 텍스트
       const texts = textBoxes.get(origPageNum) || [];
       texts.forEach(t => {
-        copiedPage.drawText(t.text || '', {
-          x: t.x / renderZoomScale,
-          y: pageHeight - (t.y / renderZoomScale) - 15,
-          size: parseFloat(t.fontSize || 16) / renderZoomScale,
+        const fs = parseFloat(t.fontSize || 16);
+        copiedPage.drawText(toWinAnsiSafe(t.text || ''), {
+          x: t.x + 8,                               // 미리보기 padding 보정
+          y: pageHeight - t.y - 4 - fs * 0.8,       // 미리보기 baseline 보정
+          size: fs,
           font: helveticaFont,
-          color: rgb(0, 0, 0)
+          color: hexToRgb(t.color || '#000000')
         });
       });
 
-      // 3. 외부 이미지 (미리보기 화면 비율과 100% 동일 정밀 보정)
+      // 3. 이미지 (비율 그대로)
       const imgs = imageBoxes.get(origPageNum) || [];
       for (const imgData of imgs) {
-        let embeddedImg = null;
-        if (imgData.src.startsWith('data:image/png')) {
-          embeddedImg = await pdfDoc.embedPng(imgData.src);
-        } else {
-          embeddedImg = await pdfDoc.embedJpg(imgData.src);
-        }
-
-        const realX = imgData.x / renderZoomScale;
-        const realW = imgData.w / renderZoomScale;
-        const realH = imgData.h / renderZoomScale;
-        const realY = pageHeight - (imgData.y / renderZoomScale) - realH;
+        const isJpg = imgData.src.startsWith('data:image/jpeg') || imgData.src.startsWith('data:image/jpg');
+        const embeddedImg = isJpg
+          ? await pdfDoc.embedJpg(imgData.src)
+          : await pdfDoc.embedPng(imgData.src);
 
         copiedPage.drawImage(embeddedImg, {
-          x: realX,
-          y: realY,
-          width: realW,
-          height: realH
+          x: imgData.x,
+          y: pageHeight - imgData.y - imgData.h,
+          width: imgData.w,
+          height: imgData.h
         });
       }
 
@@ -1604,10 +1620,11 @@
     createdPages.forEach((item, index) => {
       const links = linkBoxes.get(item.origPageNum) || [];
       links.forEach(l => {
-        const linkX = l.x / renderZoomScale;
-        const linkY = item.height - (l.y / renderZoomScale) - (l.h / renderZoomScale);
-        const linkW = l.w / renderZoomScale;
-        const linkH = l.h / renderZoomScale;
+        const linkX = l.x;
+        const linkY = item.height - l.y - l.h;
+        const linkW = l.w;
+        const linkH = l.h;
+
 
         if (l.type === 'url') {
           let targetUrl = l.targetUrl || 'https://example.com';

@@ -1854,18 +1854,28 @@
     if (!rawBuffer) { alert('먼저 PDF 파일을 불러와 주세요.'); return; }
 
     const { PDFDocument, rgb, StandardFonts } = PDFLib;
-
-    const srcDoc = await PDFDocument.load(rawBuffer, { ignoreEncryption: true });
-
-    const pdfDoc = await PDFDocument.create();
+    const pdfDoc = await PDFDocument.load(rawBuffer, {
+      ignoreEncryption: true,
+      throwOnInvalidObject: false,
+      updateMetadata: false
+    });
     const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    // 원본 페이지를 그대로 쓰고, 빠진 페이지는 뒤에서 제거 (copyPages 미사용)
+    const allPages = pdfDoc.getPages();
+    const keep = activePages.slice();
+
+    for (let i = allPages.length; i >= 1; i--) {
+      if (!keep.includes(i)) pdfDoc.removePage(i - 1);
+    }
 
     const createdPages = [];
 
-    for (let i = 0; i < activePages.length; i++) {
-      const origPageNum = activePages[i];
-      const [copiedPage] = await pdfDoc.copyPages(srcDoc, [origPageNum - 1]);
+    for (let i = 0; i < keep.length; i++) {
+      const origPageNum = keep[i];
+      const copiedPage = allPages[origPageNum - 1];
       const pageHeight = copiedPage.getHeight();
+
 
       // 1. 마스킹
       const masks = manualMasks.get(origPageNum) || [];
@@ -1917,8 +1927,8 @@
         });
       }
 
-      const addedPage = pdfDoc.addPage(copiedPage);
-      createdPages.push({ origPageNum, pageObj: addedPage, height: pageHeight });
+      createdPages.push({ origPageNum, pageObj: copiedPage, height: pageHeight });
+
     }
 
     // 4. 클릭 가능한 링크 Annotation 합성

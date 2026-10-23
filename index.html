@@ -1845,7 +1845,8 @@
       await processAndDownloadInner();
     } catch (err) {
       console.error('다운로드 실패:', err);
-      alert('다운로드 실패\n\n' + (err && err.message ? err.message : err));
+      alert('다운로드 실패\n\n' + (err && err.stack ? err.stack : err));
+
     }
   }
 

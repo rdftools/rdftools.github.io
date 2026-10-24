@@ -1990,7 +1990,7 @@
       'https://cdn.jsdelivr.net/npm/@kfonts/nanum-gothic@0.2.0/src/NanumGothic.ttf'
 
     ).then(r => r.arrayBuffer());
-    const helveticaFont = await pdfDoc.embedFont(fontBytes, { subset: true });
+const helveticaFont = await pdfDoc.embedFont(fontBytes);
 
 
     const allPages = pdfDoc.getPages();

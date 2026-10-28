@@ -507,7 +507,9 @@
       <div class="toolbar-group">
         <label>배경색:</label>
         <input type="color" id="activeBgColor" value="#ffffff" onchange="updateActiveTextBox()">
+        <label style="margin-left:6px;"><input type="checkbox" id="activeBgTransparent" onchange="updateActiveTextBox()"> 투명</label>
       </div>
+
       <div class="toolbar-group">
         <label>폰트:</label>
         <select id="localFontSelect" class="input-field" style="width:180px; padding:6px;">
@@ -1396,7 +1398,9 @@
       box.style.fontSize = `${parseFloat(t.fontSize) * Z}px`;                   // ★ 글자도 함께 확대
       box.style.padding = `${4 * Z}px ${8 * Z}px`;                              // ★ padding 도 비례 (출력 보정식과 일치)
       box.style.color = t.color;
-      box.style.backgroundColor = t.bgColor; box.textContent = t.text || '텍스트';
+      box.style.backgroundColor = t.bgTransparent ? 'transparent' : t.bgColor;
+      box.textContent = t.text || '텍스트';
+
 
       makeElementDraggable(box, t, pageNum);
 
@@ -1407,6 +1411,8 @@
         document.getElementById('activeFontSize').value = t.fontSize;
         document.getElementById('activeTextColor').value = t.color;
         document.getElementById('activeBgColor').value = t.bgColor;
+        document.getElementById('activeBgTransparent').checked = !!t.bgTransparent;
+
         document.querySelectorAll('.text-box-element').forEach(el => el.classList.remove('selected'));
         box.classList.add('selected');
       };
@@ -1650,6 +1656,8 @@
     activeSelectedElement.fontSize = document.getElementById('activeFontSize').value;
     activeSelectedElement.color = document.getElementById('activeTextColor').value;
     activeSelectedElement.bgColor = document.getElementById('activeBgColor').value;
+    activeSelectedElement.bgTransparent = document.getElementById('activeBgTransparent').checked;
+
     syncOverlayBoxes(getCurrentPageNum());
   }
 

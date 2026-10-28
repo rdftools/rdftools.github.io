@@ -1379,7 +1379,8 @@
       box.appendChild(resizeHandle);
 
       const txtHandle = document.createElement('div');
-      txtHandle.className = 'mask-handle handle-se';
+      txtHandle.style.cssText = 'position:absolute; right:-6px; bottom:-6px; width:12px; height:12px; background:#2563eb; border:2px solid #fff; border-radius:50%; cursor:nwse-resize; z-index:20;';
+
       makeTextResizable(box, txtHandle, t, pageNum);
       box.appendChild(txtHandle);
 

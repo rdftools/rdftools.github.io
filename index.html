@@ -777,9 +777,11 @@
     }
 
     let html = '';
-    logs.slice().forEach(log => {
+    logs.slice().reverse().forEach(log => {
+
       let rawDate = String(log.timestamp || log.date || '');
-      let formattedDate = rawDate.length >= 19 ? rawDate.substring(0, 19) : rawDate;
+      let formattedDate = rawDate.replace('T', ' ').substring(0, 19);
+
 
 
       let displayUser = log.user || '';

@@ -777,9 +777,10 @@
     }
 
     let html = '';
-    logs.slice().reverse().forEach(log => {
-      let rawDate = String(log.date || log.timestamp || '');
-      let formattedDate = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
+    logs.slice().forEach(log => {
+      let rawDate = String(log.timestamp || log.date || '');
+      let formattedDate = rawDate.length >= 19 ? rawDate.substring(0, 19) : rawDate;
+
 
       let displayUser = log.user || '';
       if (displayUser.includes('@')) displayUser = displayUser.split('@')[0];
@@ -835,6 +836,7 @@
     rawBuffer = await file.arrayBuffer();
     pdfJsDoc = await pdfjsLib.getDocument({ data: new Uint8Array(rawBuffer) }).promise;
     totalPages = pdfJsDoc.numPages;
+    logUserAction('PDF 열기', `${file.name} (${totalPages}p)`);
 
     activePages = Array.from({ length: totalPages }, (_, i) => i + 1);
     currentActiveIndex = 0;
@@ -2163,16 +2165,31 @@ const helveticaFont = await pdfDoc.embedFont(fontBytes);
     });
 
     await setProgress(96, '파일 저장 중...');
-    const pdfBytes = await pdfDoc.save();
+    const pdfBytes = await pdfDoc.save({ useObjectStreams: false });
+    const sizeMB = (pdfBytes.length / 1024 / 1024).toFixed(1);
+    console.log('생성된 PDF 크기(MB):', sizeMB);
+
+    closeProgress();   // 모달이 덮고 있으면 클릭이 저장으로 처리되지 않음
 
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
+    const fileName = `edited_pdf_${Date.now()}.pdf`;
+
     const a = document.createElement('a');
     a.href = url;
-    a.download = `edited_pdf_${Date.now()}.pdf`;
+    a.download = fileName;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
     a.click();
+    setTimeout(() => {
+      if (a.parentNode) document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 10000);
 
-    showToast('미리보기와 정확히 동일하게 저장되었습니다.');
+    logUserAction('PDF 다운로드', `${keep.length}p / ${sizeMB}MB / 300dpi 저장`);
+    showToast(`저장 완료 (${sizeMB}MB)`);
+
   }
 
   function prevPage() { if (currentActiveIndex > 0) { currentActiveIndex--; renderCurrentPage(); } }

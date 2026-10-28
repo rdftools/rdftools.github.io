@@ -1959,7 +1959,8 @@
   }
 
   // 암호화 PDF 대응: pdf.js 로 렌더한 뒤 이미지 기반 PDF 로 재구성
-  async function buildDecryptedBuffer(scale = 3.0) {
+async function buildDecryptedBuffer(scale = 300 / 72) {
+
 
     const { PDFDocument } = PDFLib;
     const outDoc = await PDFDocument.create();
@@ -2013,20 +2014,11 @@
     let pdfDoc;
     let usedFallback = false;
 
-    try {
-      pdfDoc = await PDFDocument.load(rawBuffer, {
-        ignoreEncryption: true,
-        throwOnInvalidObject: false,
-        updateMetadata: false
-      });
-      pdfDoc.getPages();   // 페이지 트리가 멀쩡한지 여기서 검증
-    } catch (e) {
-      console.warn('원본 구조 손상/암호화 → 재구성 방식으로 전환', e);
-      const rebuilt = await buildDecryptedBuffer();
+  // 항상 300dpi 고해상도로 재구성하여 저장
+  const rebuilt = await buildDecryptedBuffer();
+  pdfDoc = await PDFDocument.load(rebuilt);
+  usedFallback = true;
 
-      pdfDoc = await PDFDocument.load(rebuilt);
-      usedFallback = true;
-    }
 
     pdfDoc.registerFontkit(fontkit);
     const fontBytes = await fetch(

@@ -1378,11 +1378,17 @@
       makeElementResizable(box, resizeHandle, m, pageNum);
       box.appendChild(resizeHandle);
 
+      const txtHandle = document.createElement('div');
+      txtHandle.className = 'mask-handle handle-se';
+      makeTextResizable(box, txtHandle, t, pageNum);
+      box.appendChild(txtHandle);
+
       const closeBtn = document.createElement('div');
       closeBtn.className = 'mask-close-btn'; closeBtn.textContent = '✕';
       closeBtn.onclick = (e) => {
         e.stopPropagation();
-        manualMasks.set(pageNum, masks.filter(item => item.id !== m.id));
+        textBoxes.set(pageNum, texts.filter(item => item.id !== t.id));
+
         syncOverlayBoxes(pageNum);
       };
       box.appendChild(closeBtn);
@@ -1565,6 +1571,34 @@
       };
 
       document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; };
+    };
+  }
+  function makeTextResizable(elm, handle, dataObj, pageNum) {
+    handle.onmousedown = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const Z = renderZoomScale;
+      const startX = e.clientX;
+      const startFs = parseFloat(dataObj.fontSize) || 16;
+      const startW = elm.offsetWidth;
+
+      document.onmousemove = (e2) => {
+        e2.preventDefault();
+        const ratio = (startW + (e2.clientX - startX)) / startW;
+        let newFs = Math.round(startFs * ratio);
+        if (newFs < 6) newFs = 6;
+        if (newFs > 200) newFs = 200;
+        dataObj.fontSize = newFs;
+        elm.style.fontSize = (newFs * Z) + 'px';
+        const fsInput = document.getElementById('activeFontSize');
+        if (activeSelectedElement === dataObj && fsInput) fsInput.value = newFs;
+      };
+
+      document.onmouseup = () => {
+        document.onmousemove = null;
+        document.onmouseup = null;
+        syncOverlayBoxes(pageNum);
+      };
     };
   }
 

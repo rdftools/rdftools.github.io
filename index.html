@@ -781,6 +781,20 @@
     document.getElementById('adminLogTypeFilter').value = '';
     renderAdminLogTable(fetchedRawLogs);
   }
+  function formatLogTime(raw) {
+    const s = String(raw || '');
+    if (!s) return '';
+    // 시트가 날짜 값으로 바꿔 ISO(UTC)로 돌려준 경우 → 현지 시각으로 환산
+    if (/\d{4}-\d{2}-\d{2}T/.test(s)) {
+      const d = new Date(s);
+      if (!isNaN(d)) {
+        const p = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ` +
+               `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+      }
+    }
+    return s.substring(0, 19);   // 이미 문자열로 저장된 경우 그대로
+  }
 
   function renderAdminLogTable(logs) {
     const tbody = document.getElementById('adminLogTableBody');
@@ -793,7 +807,8 @@
     logs.slice().reverse().forEach(log => {
 
       let rawDate = String(log.timestamp || log.date || '');
-      let formattedDate = rawDate.replace('T', ' ').substring(0, 19);
+      let formattedDate = formatLogTime(rawDate);
+
 
 
 
@@ -819,7 +834,8 @@
     }
     let csv = '\uFEFF일시,일자,사용자 계정,작업 유형,상세 작업 내용\n';
     fetchedRawLogs.forEach(l => {
-      csv += `"${l.timestamp}","${l.date}","${l.user}","${l.type}","${l.detail}"\n`;
+      csv += `"${formatLogTime(l.timestamp)}","${l.date}","${l.user}","${l.type}","${l.detail}"\n`;
+
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

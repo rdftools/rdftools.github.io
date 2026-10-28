@@ -1378,23 +1378,17 @@
       makeElementResizable(box, resizeHandle, m, pageNum);
       box.appendChild(resizeHandle);
 
-      const txtHandle = document.createElement('div');
-      txtHandle.style.cssText = 'position:absolute; right:-6px; bottom:-6px; width:12px; height:12px; background:#2563eb; border:2px solid #fff; border-radius:50%; cursor:nwse-resize; z-index:20;';
-
-      makeTextResizable(box, txtHandle, t, pageNum);
-      box.appendChild(txtHandle);
-
       const closeBtn = document.createElement('div');
       closeBtn.className = 'mask-close-btn'; closeBtn.textContent = '✕';
       closeBtn.onclick = (e) => {
         e.stopPropagation();
-        textBoxes.set(pageNum, texts.filter(item => item.id !== t.id));
-
+        manualMasks.set(pageNum, masks.filter(item => item.id !== m.id));
         syncOverlayBoxes(pageNum);
       };
       box.appendChild(closeBtn);
       overlay.appendChild(box);
     });
+
 
     // 2. 텍스트 박스
     const texts = textBoxes.get(pageNum) || [];
@@ -1424,12 +1418,18 @@
         box.classList.add('selected');
       };
 
+      const txtHandle = document.createElement('div');
+      txtHandle.style.cssText = 'position:absolute; right:-6px; bottom:-6px; width:12px; height:12px; background:#2563eb; border:2px solid #fff; border-radius:50%; cursor:nwse-resize; z-index:60;';
+      makeTextResizable(box, txtHandle, t, pageNum);
+      box.appendChild(txtHandle);
+
       const closeBtn = document.createElement('div');
       closeBtn.className = 'mask-close-btn'; closeBtn.textContent = '✕';
       closeBtn.onclick = (e) => {
         e.stopPropagation();
         textBoxes.set(pageNum, texts.filter(item => item.id !== t.id));
         if (activeSelectedElement === t) activeSelectedElement = null;
+
         syncOverlayBoxes(pageNum);
       };
       box.appendChild(closeBtn);

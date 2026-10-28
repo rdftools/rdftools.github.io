@@ -274,6 +274,18 @@
     <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
   </div>
 </div>
+  <div class="modal-overlay" id="dlOptionModal">
+  <div class="modal-box" style="max-width:460px; text-align:left; align-items:stretch;">
+    <div class="modal-title">다운로드 품질 선택</div>
+    <div class="modal-desc" id="dlEstimateDesc">예상 용량을 계산하는 중...</div>
+    <div id="dlOptionList" style="display:flex; flex-direction:column; gap:8px;"></div>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button class="file-btn" style="flex:1;" onclick="closeDownloadOptions()">취소</button>
+      <button class="modal-btn" style="flex:2;" onclick="startDownloadWithOption()">이 품질로 다운로드</button>
+    </div>
+  </div>
+</div>
+
 <!-- 다운로드 진행률 모달 -->
 <div class="modal-overlay" id="progressModal">
   <div class="modal-box" style="max-width:420px;">
@@ -583,7 +595,8 @@
 
     <div class="button-group-bottom">
       <button class="btn-apply-preview" id="applyPreviewBtn" onclick="applyCheckedWatermarks()">편집 적용하기</button>
-      <button class="btn-download-main" id="downloadBtn" onclick="processAndDownload()">편집 완료된 PDF 다운로드</button>
+      <button class="btn-download-main" id="downloadBtn" onclick="openDownloadOptions()">편집 완료된 PDF 다운로드</button>
+
     </div>
   </div>
 </div>
@@ -1970,8 +1983,77 @@
     document.getElementById('progressModal').style.display = 'none';
   }
 
+  let dlScale = 300 / 72;      // 실제 저장에 쓰이는 배율
+  let dlQuality = 0.95;
+
+  const DL_PRESETS = [
+    { label: '300 dpi (최고 화질, 인쇄용)', scale: 300 / 72, q: 0.95 },
+    { label: '200 dpi (권장, 화질·용량 균형)', scale: 200 / 72, q: 0.92 },
+    { label: '150 dpi (가벼움, 화면 열람용)', scale: 150 / 72, q: 0.88 },
+    { label: '100 dpi (최소 용량)', scale: 100 / 72, q: 0.85 }
+  ];
+
+  async function openDownloadOptions() {
+    if (!pdfJsDoc) { alert('먼저 PDF 파일을 불러와 주세요.'); return; }
+
+    document.getElementById('dlOptionModal').style.display = 'flex';
+    document.getElementById('dlEstimateDesc').textContent = '예상 용량을 계산하는 중...';
+    document.getElementById('dlOptionList').innerHTML = '';
+
+    const page = await pdfJsDoc.getPage(activePages[0]);
+    const html = [];
+
+    for (let i = 0; i < DL_PRESETS.length; i++) {
+      const pr = DL_PRESETS[i];
+      const vp = page.getViewport({ scale: pr.scale });
+      const c = document.createElement('canvas');
+      c.width = Math.round(vp.width);
+      c.height = Math.round(vp.height);
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+      const bytes = Math.round(c.toDataURL('image/jpeg', pr.q).length * 0.75);
+      const totalMB = (bytes * activePages.length) / 1024 / 1024;
+      pr.estMB = totalMB;
+
+      const warn = totalMB > 300
+        ? ' <span style="color:#b91c1c; font-weight:700;">⚠ 너무 큼</span>'
+        : (totalMB > 120 ? ' <span style="color:#b45309;">용량 주의</span>' : '');
+
+      html.push(`
+        <label style="display:flex; align-items:center; gap:10px; border:1px solid var(--border);
+                      border-radius:8px; padding:10px 12px; cursor:pointer;">
+          <input type="radio" name="dlPreset" value="${i}" ${i === 1 ? 'checked' : ''}>
+          <span style="flex:1; font-size:0.88rem; font-weight:600;">${pr.label}${warn}</span>
+          <span class="candidate-count">약 ${totalMB.toFixed(0)} MB</span>
+        </label>
+      `);
+    }
+
+    document.getElementById('dlOptionList').innerHTML = html.join('');
+    document.getElementById('dlEstimateDesc').textContent =
+      `${activePages.length}페이지 기준 예상 용량입니다. 용량이 300MB를 넘으면 브라우저가 저장에 실패할 수 있습니다.`;
+  }
+
+  function closeDownloadOptions() {
+    document.getElementById('dlOptionModal').style.display = 'none';
+  }
+
+  function startDownloadWithOption() {
+    const sel = document.querySelector('input[name="dlPreset"]:checked');
+    const pr = DL_PRESETS[sel ? Number(sel.value) : 1];
+    dlScale = pr.scale;
+    dlQuality = pr.q;
+    closeDownloadOptions();
+    processAndDownload();
+  }
+
+  
   // 암호화 PDF 대응: pdf.js 로 렌더한 뒤 이미지 기반 PDF 로 재구성
-async function buildDecryptedBuffer(scale = 300 / 72) {
+  async function buildDecryptedBuffer(scale = dlScale) {
+
 
 
     const { PDFDocument } = PDFLib;
@@ -1995,7 +2077,8 @@ async function buildDecryptedBuffer(scale = 300 / 72) {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       await page.render({ canvasContext: ctx, viewport }).promise;
 
-      const jpg = canvas.toDataURL('image/jpeg', 0.98);
+      const jpg = canvas.toDataURL('image/jpeg', dlQuality);
+
 
       const img = await outDoc.embedJpg(jpg);
       const outPage = outDoc.addPage([base.width, base.height]);

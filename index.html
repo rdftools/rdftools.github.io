@@ -925,12 +925,20 @@
       }
 
       const pdfBytes = await mergedPdf.save();
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `merged_${Date.now()}.pdf`;
-      a.click();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    console.log('생성된 PDF 크기(MB):', (blob.size / 1024 / 1024).toFixed(1));
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `edited_pdf_${Date.now()}.pdf`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 4000);
+
 
       logUserAction('PDF 병합', `${mergeFiles.length}개 PDF 파일 병합 완료`);
       showToast(`${mergeFiles.length}개의 PDF 파일 병합이 완료되었습니다.`);

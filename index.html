@@ -634,6 +634,7 @@
   const LOG_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby03uUDvOLzBeC5suyln_VI6RNC0R2dwv_IMqfuHl53eHVO3qUH99SPlWEzW1LEDjToaQ/exec';
 
   let fetchedRawLogs = [];
+  let pendingLogs = [];
 
   function parseJwt(token) {
     const base64Url = token.split('.')[1];
@@ -671,15 +672,25 @@
       detail: detail
     };
 
-    if (LOG_SCRIPT_URL) {
-      fetch(LOG_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload)
-      }).catch(err => console.error('로그 전송 오류:', err));
-    }
+    pendingLogs.push(payload);   // 다운로드가 성공해야 실제로 전송됨
   }
+
+  function sendLogNow(payload) {
+    if (!LOG_SCRIPT_URL) return;
+    fetch(LOG_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    }).catch(err => console.error('로그 전송 실패:', err));
+  }
+
+  function flushPendingLogs() {
+    pendingLogs.forEach(sendLogNow);
+    console.log('작업 이력 전송:', pendingLogs.length + '건');
+    pendingLogs = [];
+  }
+
 
   function initAuthState() {
     const savedEmail = localStorage.getItem(AUTH_STORAGE_KEY);
@@ -867,7 +878,9 @@
     rawBuffer = await file.arrayBuffer();
     pdfJsDoc = await pdfjsLib.getDocument({ data: new Uint8Array(rawBuffer) }).promise;
     totalPages = pdfJsDoc.numPages;
+    pendingLogs = [];   // 다운로드 없이 끝난 이전 작업은 기록하지 않음
     logUserAction('PDF 열기', `${file.name} (${totalPages}p)`);
+
 
     activePages = Array.from({ length: totalPages }, (_, i) => i + 1);
     currentActiveIndex = 0;
@@ -2288,8 +2301,10 @@ const helveticaFont = await pdfDoc.embedFont(fontBytes);
       URL.revokeObjectURL(url);
     }, 10000);
 
-    logUserAction('PDF 다운로드', `${keep.length}p / ${sizeMB}MB / 300dpi 저장`);
+    logUserAction('PDF 다운로드', `${keep.length}p / ${sizeMB}MB / ${Math.round(dlScale * 72)}dpi 저장`);
+    flushPendingLogs();
     showToast(`저장 완료 (${sizeMB}MB)`);
+
 
   }
 

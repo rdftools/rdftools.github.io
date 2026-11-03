@@ -1175,7 +1175,8 @@ canvas#pdfCanvas {
     const allImgInstances = [];        // ★ Map 대신 평면 배열로 모은다
 
     for (let p = 1; p <= totalPages; p++) {
-      if (p === 1 || p % 10 === 0) showToast(`워터마크 분석 중... (${p}/${totalPages})`);
+      showToast(`워터마크 분석 중... (${p}/${totalPages})`);
+
 
       const page = await pdfJsDoc.getPage(p);
       const vp = page.getViewport({ scale: 1 });

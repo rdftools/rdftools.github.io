@@ -1876,17 +1876,30 @@
     showToast('현재 페이지의 마스킹이 전체 페이지에 일괄 적용되었습니다.');
   }
 
+  const TAB_BTN_IDS = {
+    watermark: 'tabWm',
+    merge: 'tabMerge',
+    skew: 'tabSkew',
+    pageDelete: 'tabPg',
+    masking: 'tabMask',
+    textEdit: 'tabText',
+    imageEdit: 'tabImage',
+    linkEdit: 'tabLink',
+    password: 'tabPass'
+  };
+
   function switchMainTab(tab) {
     currentMainTab = tab;
     const tabs = ['watermark', 'merge', 'skew', 'pageDelete', 'masking', 'textEdit', 'imageEdit', 'linkEdit', 'password'];
     tabs.forEach(t => {
-      const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+      const btn = document.getElementById(TAB_BTN_IDS[t]);
       const sec = document.getElementById('section' + t.charAt(0).toUpperCase() + t.slice(1));
       if (btn) btn.classList.toggle('active', t === tab);
       if (sec) sec.style.display = (t === tab) ? 'flex' : 'none';
     });
     if (activePages.length > 0) renderCurrentPage();
   }
+
 
   /* --- 썸네일 드래그 앤 드롭 순서 이동 --- */
   async function renderPageThumbnails() {

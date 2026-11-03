@@ -208,10 +208,12 @@
       color: white; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold;
     }
 
-    .preview-container { border: 1px solid var(--border); background: var(--house-green); border-radius: 8px; min-height: 400px; overflow: auto; display: block; padding: 20px; position: relative; text-align: center; }
+.preview-container { border: 2px solid #111111; background: #ffffff; border-radius: 8px; min-height: 400px; overflow: auto; display: block; padding: 20px; position: relative; text-align: center; }
+
     .canvas-wrapper { position: relative; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.3); user-select: none; margin: 0 auto; text-align: left; }
     canvas#pdfCanvas { background: white; display: none; }
-    .empty-preview-text { color: rgba(255, 255, 255, 0.6); font-size: 0.95rem; font-weight: 600; text-align: center; padding: 60px 20px; }
+.empty-preview-text { color: #6b7280; font-size: 0.95rem; font-weight: 600; text-align: center; padding: 60px 20px; }
+
 
     /* 레이어 엘리먼트 스타일 */
     .mask-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto; cursor: crosshair; display: none; z-index: 10; }

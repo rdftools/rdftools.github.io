@@ -1432,12 +1432,25 @@ canvas#pdfCanvas {
     canvas.style.display = 'block';
     document.getElementById('emptyPreviewText').style.display = 'none';
 
-    if (currentRenderTask) currentRenderTask.cancel();
-    currentRenderTask = page.render({ canvasContext: ctx, viewport });
-    await currentRenderTask.promise;
-
-    syncOverlayBoxes(pageNum);
+  if (currentRenderTask) {
+    currentRenderTask.cancel();
+    try { await currentRenderTask.promise; } catch (e) { /* 취소된 작업 */ }
   }
+
+  const myTask = page.render({ canvasContext: ctx, viewport });
+  currentRenderTask = myTask;
+
+  try {
+    await myTask.promise;
+  } catch (e) {
+    if (e && e.name === 'RenderingCancelledException') return;
+    throw e;
+  }
+
+  if (currentRenderTask !== myTask) return;
+
+  syncOverlayBoxes(pageNum);
+}
 
   /* --- 레이어 싱크 --- */
   function syncOverlayBoxes(pageNum) {

@@ -832,28 +832,46 @@ canvas#pdfCanvas {
       return;
     }
 
-    let html = '';
+    const groups = [];
+    const groupMap = {};
+
     logs.slice().reverse().forEach(log => {
-
-      let rawDate = String(log.timestamp || log.date || '');
-      let formattedDate = formatLogTime(rawDate);
-
-
-
+      let rawDate = String(log.date || log.timestamp || '');
+      let formattedDate = rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate;
 
       let displayUser = log.user || '';
       if (displayUser.includes('@')) displayUser = displayUser.split('@')[0];
 
+      const key = formattedDate + '|' + displayUser;
+      if (!groupMap[key]) {
+        groupMap[key] = { date: formattedDate, user: displayUser, types: {}, details: [] };
+        groups.push(groupMap[key]);
+      }
+
+      const g = groupMap[key];
+      const type = log.type || '';
+      g.types[type] = (g.types[type] || 0) + 1;
+      if (log.detail) g.details.push(log.detail);
+    });
+
+    let html = '';
+    groups.forEach(g => {
+      const typeHtml = Object.keys(g.types).map(t => {
+        const n = g.types[t];
+        return `<span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:600; display:inline-block; margin:1px 2px 1px 0;">${t}${n > 1 ? ' ×' + n : ''}</span>`;
+      }).join('');
+
       html += `
         <tr>
-          <td style="white-space: nowrap;">${formattedDate}</td>
-          <td><b>${displayUser}</b></td>
-          <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:600;">${log.type || ''}</span></td>
-          <td>${log.detail || ''}</td>
+          <td style="white-space: nowrap; vertical-align: top;">${g.date}</td>
+          <td style="vertical-align: top;"><b>${g.user}</b></td>
+          <td style="vertical-align: top;">${typeHtml}</td>
+          <td style="vertical-align: top;">${g.details.join(' · ')}</td>
         </tr>
       `;
     });
     tbody.innerHTML = html;
+
   }
 
   function exportLogsCSV() {

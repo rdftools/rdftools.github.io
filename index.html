@@ -1943,8 +1943,9 @@ canvas#pdfCanvas {
       if (btn) btn.classList.toggle('active', t === tab);
       if (sec) sec.style.display = (t === tab) ? 'flex' : 'none';
     });
-    if (activePages.length > 0) renderCurrentPage();
+    if (activePages.length > 0) syncOverlayBoxes(getCurrentPageNum());
   }
+
 
 
   /* --- 썸네일 드래그 앤 드롭 순서 이동 --- */

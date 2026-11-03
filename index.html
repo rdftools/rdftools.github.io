@@ -210,8 +210,20 @@
 
 .preview-container { border: 2px solid #111111; background: #ffffff; border-radius: 8px; min-height: 400px; overflow: auto; display: block; padding: 20px; position: relative; text-align: center; }
 
-    .canvas-wrapper { position: relative; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.3); user-select: none; margin: 0 auto; text-align: left; }
-    canvas#pdfCanvas { background: white; display: none; }
+.canvas-wrapper {
+  position: relative;
+  display: inline-block;
+  user-select: none;
+  margin: 0 auto;
+  text-align: left;
+}
+
+canvas#pdfCanvas {
+  background: white;
+  display: none;
+  border: 1px solid #111111;
+}
+
 .empty-preview-text { color: #6b7280; font-size: 0.95rem; font-weight: 600; text-align: center; padding: 60px 20px; }
 
 

@@ -2374,12 +2374,15 @@ const helveticaFont = await pdfDoc.embedFont(fontBytes);
   }
 
   function undoLastAction() { showToast('마지막 작업을 취소했습니다.'); }
-  function showToast(msg) {
+let _toastTimer = null;
+function showToast(msg) {
     const toast = document.getElementById('statusToast');
     toast.textContent = msg;
     toast.style.display = 'block';
-    setTimeout(() => { toast.style.display = 'none'; }, 3000);
-  }
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+}
+
 
   window.addEventListener('DOMContentLoaded', () => { initAuthState(); });
 </script>

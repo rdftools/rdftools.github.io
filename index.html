@@ -9,9 +9,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-
-
-  </script>
   <style>
 :root {
   --primary: #111111;
@@ -435,7 +432,7 @@ canvas#pdfCanvas {
       <span>영역 마스킹</span>
     </button>
     <button class="tab-btn" id="tabText" onclick="switchMainTab('textEdit')">
-      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 022 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       <span>텍스트</span>
     </button>
     <button class="tab-btn" id="tabImage" onclick="switchMainTab('imageEdit')">
@@ -912,7 +909,7 @@ canvas#pdfCanvas {
     document.getElementById('emptyPreviewText').textContent = 'PDF 문서를 분석하고 있습니다...';
 
     rawBuffer = await file.arrayBuffer();
-    pdfJsDoc = await pdfjsLib.getDocument({ data: new Uint8Array(rawBuffer) }).promise;
+    pdfJsDoc = await pdfjsLib.getDocument({ data: new Uint8Array(rawBuffer.slice(0)) }).promise;
     totalPages = pdfJsDoc.numPages;
     pendingLogs = [];   // 다운로드 없이 끝난 이전 작업은 기록하지 않음
     logUserAction('PDF 열기', `${file.name} (${totalPages}p)`);
@@ -926,6 +923,7 @@ canvas#pdfCanvas {
     imageBoxes.clear();
     linkBoxes.clear();
 
+    await loadExistingLinks();
     await analyzeWatermarks();
     renderPageThumbnails();
     renderCurrentPage();
@@ -992,23 +990,122 @@ canvas#pdfCanvas {
     });
   }
 
-  async function startMergeProcess() {
-    if (mergeFiles.length < 2) { alert('병합을 하려면 최소 2개 이상의 PDF 파일을 추가해 주세요.'); return; }
 
-    try {
-      const { PDFDocument } = PDFLib;
-      const mergedPdf = await PDFDocument.create();
+async function startMergeProcess() {
+  if (mergeFiles.length < 2) { alert('병합을 하려면 최소 2개 이상의 PDF 파일을 추가해 주세요.'); return; }
 
-      for (const file of mergeFiles) {
-        const buffer = await file.arrayBuffer();
-        const pdf = await PDFDocument.load(buffer);
-        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-        copiedPages.forEach(page => mergedPdf.addPage(page));
+  try {
+    const { PDFDocument, PDFArray, PDFDict, PDFName, PDFRef, PDFNumber } = PDFLib;
+    const mergedPdf = await PDFDocument.create();
+    const refMap = new Map();     // 원본 페이지 ref(문자열) → 병합 문서의 새 페이지 ref
+    const pairs = [];             // { src, srcPage, newPage }
+    let dropped = 0;
+
+    // 1) 페이지 복사 + 대응표 만들기
+    for (const file of mergeFiles) {
+      const buffer = await file.arrayBuffer();
+      const src = await PDFDocument.load(buffer, { ignoreEncryption: true });
+      const srcPages = src.getPages();
+      const copied = await mergedPdf.copyPages(src, src.getPageIndices());
+      copied.forEach((newPage, i) => {
+        mergedPdf.addPage(newPage);
+        refMap.set(String(srcPages[i].ref), newPage.ref);
+        pairs.push({ src, srcPage: srcPages[i], newPage });
+      });
+    }
+
+    // 원본 객체를 병합 문서로 복사 (페이지 참조 P, 목적지 Dest/D, 부모 Parent 는 제외)
+    const SKIP = new Set(['P', 'Dest', 'D', 'Parent']);
+    const deepCopy = (src, obj) => {
+      if (obj instanceof PDFRef) {
+        const resolved = src.context.lookup(obj);
+        if (resolved instanceof PDFDict || resolved instanceof PDFArray) {
+          return mergedPdf.context.register(deepCopy(src, resolved));
+        }
+        return resolved;
+      }
+      if (obj instanceof PDFDict) {
+        const out = mergedPdf.context.obj({});
+        obj.entries().forEach(([k, v]) => {
+          if (SKIP.has(String(k).replace(/^\//, ''))) return;
+          out.set(k, deepCopy(src, v));
+        });
+        return out;
+      }
+      if (obj instanceof PDFArray) {
+        return mergedPdf.context.obj(obj.asArray().map(v => deepCopy(src, v)));
+      }
+      return obj;
+    };
+
+    // 목적지 배열(원본 페이지 참조)을 병합 문서의 새 페이지 참조로 바꾼다
+    const remapDest = (src, destVal) => {
+      const arr = destVal instanceof PDFRef ? src.context.lookup(destVal) : destVal;
+      if (!(arr instanceof PDFArray)) return null;
+      const target = refMap.get(String(arr.get(0)));
+      if (!target) return null;
+      const rest = arr.asArray().slice(1).map(v => deepCopy(src, v));
+      return mergedPdf.context.obj([target, ...rest]);
+    };
+
+    // 2) 각 페이지의 주석을 다시 만든다
+    pairs.forEach(({ src, srcPage, newPage }) => {
+      newPage.node.delete(PDFName.of('Annots'));   // copyPages 가 가져온 주석은 버리고 다시 만든다
+
+      const annotsVal = srcPage.node.get(PDFName.of('Annots'));
+      const annots = annotsVal ? src.context.lookup(annotsVal) : undefined;
+      if (!(annots instanceof PDFArray)) return;
+
+      const refs = [];
+      for (let i = 0; i < annots.size(); i++) {
+        const dict = src.context.lookup(annots.get(i));
+        if (!(dict instanceof PDFDict)) continue;
+
+        const isLink = String(dict.get(PDFName.of('Subtype'))) === '/Link';
+        if (!isLink) {
+          refs.push(mergedPdf.context.register(deepCopy(src, dict)));   // 일반 주석은 그대로 복사
+          continue;
+        }
+
+        const copiedAnnot = deepCopy(src, dict);
+        const actionVal = dict.get(PDFName.of('A'));
+        const action = actionVal ? src.context.lookup(actionVal) : undefined;
+
+        // (a) 웹 링크(URI): 그대로 복사
+        if (action instanceof PDFDict && String(action.get(PDFName.of('S'))) === '/URI') {
+          refs.push(mergedPdf.context.register(copiedAnnot));
+          continue;
+        }
+
+        // (b) 페이지 이동 링크: 목적지를 새 페이지로 다시 연결
+        let newDest = null;
+        if (action instanceof PDFDict && String(action.get(PDFName.of('S'))) === '/GoTo') {
+          newDest = remapDest(src, action.get(PDFName.of('D')));
+          if (newDest) {
+            const copiedAction = copiedAnnot.lookup(PDFName.of('A'), PDFDict);
+            copiedAction.set(PDFName.of('D'), newDest);
+          }
+        } else if (dict.get(PDFName.of('Dest'))) {
+          newDest = remapDest(src, dict.get(PDFName.of('Dest')));
+          if (newDest) copiedAnnot.set(PDFName.of('Dest'), newDest);
+        } else {
+          // 외부 파일, 다음 페이지 등 기타 링크: 원본 그대로 복사
+          refs.push(mergedPdf.context.register(copiedAnnot));
+          continue;
+        }
+
+        if (!newDest) { dropped++; continue; }   // 대상 페이지가 병합 결과에 없으면 제외
+        refs.push(mergedPdf.context.register(copiedAnnot));
       }
 
-      const pdfBytes = await mergedPdf.save();
+      if (refs.length > 0) {
+        newPage.node.set(PDFName.of('Annots'), mergedPdf.context.obj(refs));
+      }
+    });
+
+    const pdfBytes = await mergedPdf.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-    console.log('생성된 PDF 크기(MB):', (blob.size / 1024 / 1024).toFixed(1));
+    console.log('생성된 PDF 크기(MB):', (blob.size / 1024 / 1024).toFixed(1), '제외된 링크:', dropped);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1021,15 +1118,14 @@ canvas#pdfCanvas {
       URL.revokeObjectURL(url);
     }, 4000);
 
-
-      logUserAction('PDF 병합', `${mergeFiles.length}개 PDF 파일 병합 완료`);
-      showToast(`${mergeFiles.length}개의 PDF 파일 병합이 완료되었습니다.`);
-    } catch (err) {
-      console.error(err);
-      alert('PDF 병합 중 오류가 발생했습니다.');
-    }
+    logUserAction('PDF 병합', `${mergeFiles.length}개 PDF 파일 병합 완료`);
+    showToast(`${mergeFiles.length}개의 PDF 파일 병합이 완료되었습니다.` +
+      (dropped > 0 ? ` (대상이 없는 링크 ${dropped}개 제외)` : ''));
+  } catch (err) {
+    console.error(err);
+    alert('PDF 병합 중 오류가 발생했습니다.');
   }
-
+}
   /* --- 워터마크 분석 (텍스트 + 반복 이미지) --- */
 
   // 행렬 곱 (pdf.js Util.transform(ctm, m) 과 동일)
@@ -1409,8 +1505,134 @@ canvas#pdfCanvas {
     logUserAction('워터마크 제거', `선택 워터마크 마스킹 (${appliedCount}건 / ${touchedPages.size}p)`);
     showToast(`${touchedPages.size}개 페이지, 총 ${appliedCount}개 영역에 마스킹을 적용했습니다.`);
   }
+// PDF 이름 객체의 #XX 이스케이프와 깨진 스킴을 복원하고, 올바른 주소만 반환
+function restoreUrl(raw) {
+  let s = String(raw || '').trim();
 
+  // PDF 이름 이스케이프 복원: #2F → /, #3A → : 등 (모든 #XX 를 바이트로 변환)
+  s = s.replace(/#([0-9a-fA-F]{2})/g, (m, h) => String.fromCharCode(parseInt(h, 16)));
 
+  // 앞에 붙은 이름 기호(/) 제거
+  s = s.replace(/^\/+/, '');
+
+  // https://https/ 같은 중복 스킴 정리
+  s = s.replace(/^(https?:\/\/)+(https?:\/\/)/i, '$2');
+  s = s.replace(/^https?:\/\/https?\//i, 'https://');
+
+  // 스킴이 없으면 https:// 추가
+  if (s && !/^https?:\/\//i.test(s)) s = 'https://' + s;
+
+  return /^https?:\/\/[^\s]+$/i.test(s) ? s : '';   // 올바르지 않으면 빈 값
+}
+async function loadExistingLinks() {
+  const { PDFArray, PDFDict, PDFName, PDFNumber, PDFString, PDFHexString } = PDFLib;
+  let doc;
+  try {
+    doc = await PDFLib.PDFDocument.load(rawBuffer.slice(0), { ignoreEncryption: true });
+  } catch (e) {
+    console.warn('링크 읽기 실패', e);
+    return;
+  }
+
+  const getObj = (dict, key) => {
+    const v = dict.get(PDFName.of(key));
+    return v === undefined ? undefined : doc.context.lookup(v);
+  };
+  const numOf = (v) => (v instanceof PDFNumber ? v.asNumber() : Number(String(v)));
+
+  const pages = doc.getPages();
+  let count = 0;
+
+  for (let p = 1; p <= totalPages; p++) {
+    const pageObj = pages[p - 1];
+    const annots = getObj(pageObj.node, 'Annots');
+    if (!(annots instanceof PDFArray)) continue;
+
+    const H = pageObj.getHeight();
+
+    for (let i = 0; i < annots.size(); i++) {
+      const dict = doc.context.lookup(annots.get(i));
+      if (!(dict instanceof PDFDict)) continue;
+      if (String(dict.get(PDFName.of('Subtype'))) !== '/Link') continue;
+
+      const rect = getObj(dict, 'Rect');
+      if (!(rect instanceof PDFArray) || rect.size() < 4) continue;
+      const x1 = numOf(doc.context.lookup(rect.get(0)));
+      const y1 = numOf(doc.context.lookup(rect.get(1)));
+      const x2 = numOf(doc.context.lookup(rect.get(2)));
+      const y2 = numOf(doc.context.lookup(rect.get(3)));
+
+      const box = {
+        id: 'link_' + p + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        x: Math.min(x1, x2),
+        y: H - Math.max(y1, y2),
+        w: Math.abs(x2 - x1),
+        h: Math.abs(y2 - y1),
+        type: 'url', targetUrl: '', targetPage: p
+      };
+
+      const action = getObj(dict, 'A');
+      let destObj = dict.get(PDFName.of('Dest'));
+
+      if (action instanceof PDFDict) {
+        const s = String(action.get(PDFName.of('S')));
+        if (s === '/URI') {
+          const u = getObj(action, 'URI');
+          let raw = '';
+          if (u instanceof PDFString || u instanceof PDFHexString) {
+            raw = u.decodeText();
+          } else if (u) {
+            raw = String(u);          // PDF 이름 형식(이전 저장본)
+          }
+          const url = restoreUrl(raw);
+          console.log('웹 링크 발견:', p + '페이지', '원본:', raw, '→ 주소:', url || '(읽기 실패)');
+          box.type = 'url';
+          box.targetUrl = url;
+          if (url) { pushLink(p, box); count++; }   // 주소를 못 읽은 링크는 목록에 올리지 않음
+          continue;
+        }
+        if (s === '/GoTo') destObj = action.get(PDFName.of('D'));
+        else continue;
+      }
+
+      if (!destObj) continue;
+      const idx = await findPageIndex(doc, pages, destObj);
+      if (idx < 0) continue;
+      box.type = 'page';
+      box.targetPage = idx + 1;
+      pushLink(p, box);
+      count++;
+    }
+  }
+  console.log('기존 링크 읽기 완료:', count + '개');
+}
+
+async function findPageIndex(doc, pages, dest) {
+  const { PDFArray, PDFRef, PDFName, PDFString, PDFHexString } = PDFLib;
+  let d = dest;
+  if (d instanceof PDFRef) d = doc.context.lookup(d);
+
+  if (d instanceof PDFArray) {
+    const ref = String(d.get(0));
+    return pages.findIndex(pg => String(pg.ref) === ref);
+  }
+
+  let name = null;
+  if (d instanceof PDFName) name = String(d).replace(/^\//, '');
+  else if (d instanceof PDFString || d instanceof PDFHexString) name = d.decodeText();
+  if (name) {
+    try {
+      const arr = await pdfJsDoc.getDestination(name);
+      if (arr && arr[0]) return await pdfJsDoc.getPageIndex(arr[0]);
+    } catch (e) { /* 해석 실패 */ }
+  }
+  return -1;
+}
+
+function pushLink(pageNum, box) {
+  if (!linkBoxes.has(pageNum)) linkBoxes.set(pageNum, []);
+  linkBoxes.get(pageNum).push(box);
+}
   /* --- 렌더링 및 레이어 구성 --- */
   function getCurrentPageNum() { return activePages[currentActiveIndex]; }
 
@@ -2305,11 +2527,11 @@ const helveticaFont = await pdfDoc.embedFont(fontBytes);
         const linkW = l.w;
         const linkH = l.h;
 
-
-        if (l.type === 'url') {
-          let targetUrl = l.targetUrl || 'https://example.com';
-          if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
-            targetUrl = 'https://' + targetUrl;
+          if (l.type === 'url') {
+          const targetUrl = restoreUrl(l.targetUrl);
+          if (!targetUrl) {
+            console.warn('주소가 비어 있어 저장에서 제외된 링크', l);
+            return;                       // example.com 으로 덮어쓰지 않음
           }
           const linkAnnot = pdfDoc.context.obj({
             Type: 'Annot',
@@ -2319,7 +2541,7 @@ const helveticaFont = await pdfDoc.embedFont(fontBytes);
             A: {
               Type: 'Action',
               S: 'URI',
-              URI: pdfDoc.context.obj(targetUrl)
+              URI: PDFLib.PDFString.of(targetUrl)
             }
           });
           const linkRef = pdfDoc.context.register(linkAnnot);
@@ -2329,12 +2551,17 @@ const helveticaFont = await pdfDoc.embedFont(fontBytes);
           const targetIndex = Math.min(Math.max(0, targetPgNum - 1), createdPages.length - 1);
           const targetPageObj = createdPages[targetIndex].pageObj;
 
+          const destArray = pdfDoc.context.obj([targetPageObj.ref, PDFLib.PDFName.of('Fit')]);
           const linkAnnot = pdfDoc.context.obj({
             Type: 'Annot',
             Subtype: 'Link',
             Rect: [linkX, linkY, linkX + linkW, linkY + linkH],
             Border: [0, 0, 0],
-            Dest: [targetPageObj.ref, 'XYZ', null, null, null]
+            A: {
+              Type: 'Action',
+              S: 'GoTo',
+              D: destArray
+            }
           });
           const linkRef = pdfDoc.context.register(linkAnnot);
           item.pageObj.node.addAnnot(linkRef);
@@ -2387,7 +2614,7 @@ const helveticaFont = await pdfDoc.embedFont(fontBytes);
     renderCurrentPage();
   }
 
-  function undoLastAction() { showToast('마지막 작업을 취소했습니다.'); }
+function undoLastAction() { showToast('실행 취소 기능은 아직 지원되지 않습니다.'); }
 let _toastTimer = null;
 function showToast(msg) {
     const toast = document.getElementById('statusToast');

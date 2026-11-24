@@ -658,9 +658,24 @@ canvas#pdfCanvas {
     return JSON.parse(jsonPayload);
   }
 
+  const ALLOWED_DOMAIN = 'impact7.kr';
+
+  function isAllowedEmail(email) {
+    return typeof email === 'string' && email.toLowerCase().endsWith('@' + ALLOWED_DOMAIN);
+  }
+
   function handleGoogleCredentialResponse(response) {
-    const responsePayload = parseJwt(response.credential);
-    const userEmail = responsePayload.email;
+    const payload = parseJwt(response.credential);
+    const userEmail = payload.email || '';
+
+    const ok = payload.email_verified && isAllowedEmail(userEmail) &&
+               (!payload.hd || payload.hd === ALLOWED_DOMAIN);
+
+    if (!ok) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      alert(`@${ALLOWED_DOMAIN} 계정으로만 사용할 수 있습니다.`);
+      return;
+    }
 
     localStorage.setItem(AUTH_STORAGE_KEY, userEmail);
     setAuthenticatedUI(userEmail);
@@ -709,11 +724,14 @@ canvas#pdfCanvas {
 
   function initAuthState() {
     const savedEmail = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (savedEmail) {
+    if (savedEmail && isAllowedEmail(savedEmail)) {
       setAuthenticatedUI(savedEmail);
+      closeAuthModal();
+    } else {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      openAuthModal();   // 허용되지 않은 상태면 로그인 창을 띄움 (닫기 버튼 없음)
     }
   }
-
   function setAuthenticatedUI(email) {
     document.getElementById('headerAuthBadge').style.display = 'flex';
     document.getElementById('authenticatedUserEmail').textContent = email;
@@ -722,7 +740,12 @@ canvas#pdfCanvas {
   function openAuthModal() {
     document.getElementById('authModal').style.display = 'flex';
   }
-
+  function requireAllowedUser() {
+    const email = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (email && isAllowedEmail(email)) return true;
+    openAuthModal();
+    return false;
+  }
   function closeAuthModal() {
     document.getElementById('authModal').style.display = 'none';
   }
@@ -900,6 +923,7 @@ canvas#pdfCanvas {
   }
 
   async function loadMainPdfFile(file) {
+    if (!requireAllowedUser()) return;
     if (!file || file.type !== 'application/pdf') {
       alert('PDF 파일만 선택이 가능합니다.');
       return;
@@ -991,8 +1015,9 @@ canvas#pdfCanvas {
   }
 
 
-async function startMergeProcess() {
-  if (mergeFiles.length < 2) { alert('병합을 하려면 최소 2개 이상의 PDF 파일을 추가해 주세요.'); return; }
+  async function openDownloadOptions() {
+    if (!requireAllowedUser()) return;
+    if (!pdfJsDoc) { alert('먼저 PDF 파일을 불러와 주세요.'); return; }
 
   try {
     const { PDFDocument, PDFArray, PDFDict, PDFName, PDFRef, PDFNumber } = PDFLib;
